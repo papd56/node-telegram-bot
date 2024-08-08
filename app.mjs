@@ -63,8 +63,10 @@ bot.on("message", async (msg) => {
                     if (numberMatch) {
                         let num = Number(numberMatch[0]);
                         const amountReceived = parseFloat(num.toFixed(2));
+                        let s = Number(amountReceived);
                         if (fixedRate != null) {
-                            dailyTotalAmount = parseFloat(dailyTotalAmount + amountReceived).toFixed(2);
+
+                            dailyTotalAmount = (parseFloat(s) + Number(dailyTotalAmount)).toFixed(2);
 
                             showldBeIssued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
 

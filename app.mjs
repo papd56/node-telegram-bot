@@ -13,8 +13,8 @@ let billingStyle = [];
 let outIssyedStyle = [];
 
 
-let fixedRate = null; //全局变量汇率
-let rate = null; //全局变量汇率
+let fixedRate = 0.00; //全局变量汇率
+let rate = 0.00; //全局变量汇率
 
 let dailyTotalAmount = 0; //入款总金额
 let numberofEntries = 0; //入账笔数
@@ -66,7 +66,7 @@ bot.on("message", async (msg) => {
                 console.error("处理费率命令出现错误：", error);
             }
             try {
-                if (messageText.startsWith("+")) {
+                if (messageText.startsWith("下发")) {
                     const numberMatch = messageText.match(/(\d+(\.\d{1,2})?)/);
                     if (numberMatch) {
                         let num = Number(numberMatch[0]);
@@ -118,8 +118,8 @@ function sendPymenTemplate(chatId,
     const keyboard = {
         inline_keyboard: [
             [
-                { text: "信息", url: "https://t.me/dbcksq" },
-                { text: "信息", url: "https://t.me/dbcksq" },
+                { text: "公群导航", url: "https://t.me/dbcksq" },
+                { text: "供求信息", url: "https://t.me/s/TelePlanting" },
             ],
         ],
     };

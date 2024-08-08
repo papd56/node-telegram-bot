@@ -1,9 +1,17 @@
 import TelegramBot from 'node-telegram-bot-api';
 import checkifUserIsAdmin from "./adminCheck.mjs"
+import { DateTime } from "luxon";
 const token = "7237081474:AAGs7NVdQkM4FAIad3OPJ-mqTyxAgAIrfsc";
 const bot = new TelegramBot(token, {
     polling: true,
 });
+
+const incomingRecords = [];
+const outgoingRecords = [];
+
+let billingStyle = [];
+let outIssyedStyle = [];
+
 
 let fixedRate = null; //全局变量汇率
 let rate = null; //全局变量汇率
@@ -19,7 +27,7 @@ bot.on("message", async (msg) => {
     const messageText = msg.text;
 
     try {
-        const isAdmin = await checkifUserIsAdmin(msg);
+        const isAdmin = await checkifUserIsAdmin(bot, msg);
         if (isAdmin === 1) {
             const originalMessageId = msg.message_id;
             try {
@@ -64,7 +72,7 @@ bot.on("message", async (msg) => {
                         let num = Number(numberMatch[0]);
                         const amountReceived = parseFloat(num.toFixed(2));
                         let s = Number(amountReceived);
-                        if (fixedRate != null) {
+                        if (fixedRate !== null) {
 
                             dailyTotalAmount = (parseFloat(s) + Number(dailyTotalAmount)).toFixed(2);
 
@@ -73,13 +81,16 @@ bot.on("message", async (msg) => {
                             unissued = (parseFloat(showldBeIssued) - parseFloat(issued)).toFixed(2);
 
                             numberofEntries += 1;
-
+                            await handleIncomingRecord(amountReceived, fixedRate);
+                            billingStyle = await sendRecordsToUser(incomingRecords);
+                            console.log("查看格式化样式", billingStyle);
                             await sendPymenTemplate(chatId,
                                 dailyTotalAmount,
                                 showldBeIssued,
                                 issued,
                                 unissued,
-                                numberofEntries);
+                                numberofEntries,
+                                billingStyle);
 
                         } else {
                             bot.sendMessage(chatId, "请先设置汇率!")
@@ -102,7 +113,8 @@ function sendPymenTemplate(chatId,
     showldBeIssued,
     issued,
     unissued,
-    numberofEntries) {
+    numberofEntries,
+    billingStyle) {
     const keyboard = {
         inline_keyboard: [
             [
@@ -114,6 +126,7 @@ function sendPymenTemplate(chatId,
 
     const message = `<a href = "https://t.me/@Guik88">518</a>
     <b>已入款(${numberofEntries}笔: )</b>
+    ${billingStyle} 
     <b>入款总金额：</b>${dailyTotalAmount}
     <b>费率：</b>${rate}
     <b>固定汇率：</b>${fixedRate}
@@ -126,5 +139,50 @@ function sendPymenTemplate(chatId,
         reply_markup: keyboard,
         disable_web_page_preview: true,
     });
+
+}
+
+//处理入款记录的函数
+async function handleIncomingRecord(amountReceived, fixedRate) {
+    const beijingTime = await getBeijingTime();
+    console.log("查看时间格式", beijingTime);
+    const timestamp = Math.floor(beijingTime.toMillis() / 1000);
+
+    const convertedAmount = (amountReceived / fixedRate).toFixed(2);
+    const incomingRecord = {
+        timestamp: timestamp,
+        amountReceived: amountReceived,
+        fixedRate: fixedRate,
+        convertedAmount: convertedAmount,
+    };
+
+    incomingRecords.unshift(incomingRecord);
+}
+
+async function getBeijingTime() {
+    const beijingTime = DateTime.now().setZone("Asia/Shanghai");
+    return beijingTime;
+}
+
+async function sendRecordsToUser(records) {
+    let text = "";
+    for (const incomingRecord of records) {
+        const formattedRecord = await formatRecordText(incomingRecord);
+        text = formattedRecord; + "\n" + text;
+    }
+    return text;
+}
+
+async function formatRecordText(records) {
+    const options = {
+        locale: "zh-CN",
+        hour12: false,
+    };
+    const timestamp = new Date(records.timestamp * 1000).toLocaleTimeString(
+        "zh-CN",
+        options
+    );
+    const foormatRecordText = `${timestamp} ${records.amountReceived} / ${records.fixedRate} = ${records.convertedAmount}`;
+    return foormatRecordText;
 
 }

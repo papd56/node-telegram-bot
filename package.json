@@ -20,7 +20,7 @@
     "prepublishOnly": "npm run build && npm run gen-doc",
     "eslint": "eslint ./src ./test ./examples",
     "mocha": "mocha",
-    "pretest": "npm run build",
+    "pretest": "npm runod",
     "test": "npm run eslint && istanbul cover ./node_modules/mocha/bin/_mocha"
   },
   "author": "Yago Pérez <yagoperezs@gmail.com>",
@@ -36,6 +36,7 @@
     "debug": "^3.2.7",
     "eventemitter3": "^3.0.0",
     "file-type": "^3.9.0",
+    "luxon": "^3.5.0",
     "mime": "^1.6.0",
     "node-telegram-bot-api": "^0.66.0",
     "pump": "^2.0.0",

@@ -19,8 +19,11 @@ let rate = 0.00; //全局变量汇率
 let dailyTotalAmount = 0; //入款总金额
 let numberofEntries = 0; //入账笔数
 let showldBeIssued = 0; //应下发金额
+let showldBeIssuedRmb = 0; //应下发金额rmb
 let issued = 0; //已下发金额
+let issuedRmb = 0; //已下发金额rmb
 let unissued = 0; //未下发金额
+let unissuedRmb = 0; //未下发金额Rmb
 
 bot.on("message", async (msg) => {
     const chatId = msg.chat.id;
@@ -78,7 +81,13 @@ bot.on("message", async (msg) => {
 
                             showldBeIssued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
 
-                            unissued = (parseFloat(showldBeIssued) - parseFloat(issued)).toFixed(2);
+                            showldBeIssuedRmb = (dailyTotalAmount * parseFloat(fixedRate)).toFixed(2);
+
+                            //已下发金额 = 入款总金额
+                            issued = (parseFloat(issued + dailyTotalAmount)).toFixed(2);
+
+                            //未下发金额 = 入款总金额 - 已下发金额
+                            unissued = (parseFloat(dailyTotalAmount) - parseFloat(issued)).toFixed(2);
 
                             numberofEntries += 1;
                             await handleIncomingRecord(amountReceived, fixedRate);
@@ -130,7 +139,7 @@ function sendPymenTemplate(chatId,
     <b>入款总金额：</b>${dailyTotalAmount}
     <b>费率：</b>${rate}
     <b>固定汇率：</b>${fixedRate}
-    <b>应下发：</b>${showldBeIssued}(USDT)
+    <b>应下发：</b>${showldBeIssued}(USDT)${showldBeIssuedRmb}(RMB)
     <b>已下发：</b>${issued}(USDT)
     <b>未下发：</b>${unissued}(USDT)`;
 

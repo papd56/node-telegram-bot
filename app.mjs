@@ -168,7 +168,7 @@ bot.on("message", async (msg) => {
                     //未下发金额 = 入款总金额 - 已下发金额
                     unissued = (parseFloat(dailyTotalAmount) - parseFloat(issued)).toFixed(2);
 
-                    unissuedRmb = (parseFloat(unissued * fixedRate) ).toFixed(2);
+                    unissuedRmb = (parseFloat(unissued * fixedRate)).toFixed(2);
 
                     numberofEntries += 1;
                     billingStyle = await sendRecordsToUser(incomingRecords);
@@ -212,7 +212,7 @@ function sendPymenTemplate(chatId,
 
     const message = `<a href = "https://t.me/@Guik88">518</a>
     <b>已入款(${numberofEntries}笔: )</b>
-    ${billingStyle} 
+    ${billingStyle.join('\n')}
     <b>入款总金额：</b>${dailyTotalAmount}
     <b>费率：</b>${rate}
     <b>固定汇率：</b>${fixedRate}
@@ -252,12 +252,14 @@ async function getBeijingTime() {
 }
 
 async function sendRecordsToUser(records) {
+    let recordsArr = [];
     let text = "";
     for (const incomingRecord of records) {
         const formattedRecord = await formatRecordText(incomingRecord);
-        text = formattedRecord; + "\n" + text;
+        text = formattedRecord;
+        recordsArr.unshift(text);
     }
-    return text;
+    return recordsArr;
 }
 
 async function formatRecordText(records) {

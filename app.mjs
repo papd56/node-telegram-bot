@@ -76,9 +76,16 @@ bot.on("message", async (msg) => {
                         let num = Number(numberMatch[0]);
                         const amountReceived = parseFloat(num.toFixed(2));
                         let s = Number(amountReceived);
+
                         if (fixedRate !== null) {
 
                             dailyTotalAmount = (parseFloat(s) + Number(dailyTotalAmount)).toFixed(2);
+
+                            // if (fixedRate === 0.00) {
+                            //     console.log("除数不能为零");
+                            //     bot.sendMessage(chatId, "汇率为零，请先设置汇率!");
+                            //     return;
+                            // }
 
                             showldBeIssued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
 
@@ -111,6 +118,27 @@ bot.on("message", async (msg) => {
                         }
                     }
                 }
+                if (messageText === "+0") {
+                    const keyboard = {
+                        inline_keyboard: [
+                            [
+                                { text: "公群导航", url: "https://t.me/dbcksq" },
+                                { text: "供求信息", url: "https://t.me/s/TelePlanting" },
+                            ],
+                        ],
+                    };
+                    await deleteBillTemplate(chatId,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0);
+                    return;
+                }
                 if (messageText.startsWith("+")) {
                     const numberMatch = messageText.match(/(\d+(\.\d{1,2})?)/);
                     if (numberMatch) {
@@ -118,6 +146,12 @@ bot.on("message", async (msg) => {
                         const amountReceived = parseFloat(num.toFixed(2));
                         let s = Number(amountReceived);
                         if (fixedRate !== null) {
+
+                            // if (fixedRate === 0.00) {
+                            //     console.log("除数不能为零");
+                            //     bot.sendMessage(chatId, "汇率为零，请先设置汇率!");
+                            //     return;
+                            // }
 
                             dailyTotalAmount = (parseFloat(s) + Number(dailyTotalAmount)).toFixed(2);
 
@@ -157,25 +191,27 @@ bot.on("message", async (msg) => {
                     if (messageText === "删除账单") {
                         const isAdmin = await checkifUserIsAdmin(bot, msg);
                         if (isAdmin === 1) {
-                            
+
+
+
                             // bot.deleteMessage(chatId, messageId)
                             let s = Number(dailyTotalAmount);
                             dailyTotalAmount = (s).toFixed(2);
-        
+
                             showldBeIssued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
-        
+
                             showldBeIssuedRmb = (dailyTotalAmount / parseFloat(fixedRate) * parseFloat(fixedRate)).toFixed(2);
-        
+
                             //已下发金额 = 入款总金额
                             issued = (parseFloat(issued + dailyTotalAmount)).toFixed(2);
-        
+
                             issuedRmb = (parseFloat(issued + dailyTotalAmount) * fixedRate).toFixed(2);
-        
+
                             //未下发金额 = 入款总金额 - 已下发金额
                             unissued = (parseFloat(dailyTotalAmount) - parseFloat(issued)).toFixed(2);
-        
+
                             unissuedRmb = (parseFloat(unissued * fixedRate)).toFixed(2);
-        
+
                             numberofEntries += 1;
                             billingStyle = await sendRecordsToUser(incomingRecords);
                             console.log("查看格式化样式", billingStyle);
@@ -189,9 +225,10 @@ bot.on("message", async (msg) => {
                                 0,
                                 0,
                                 0);
+                            bot.sendMessage(chatId, "今日账单清理完成", {
+                                reply_to_message_id: originalMessageId
 
-                            bot.sendMessage(chatId, "今日账单清理完成");
-
+                            });
                         } else {
                             bot.sendMessage(chatId, "没有操作权限!")
                         }
@@ -207,6 +244,12 @@ bot.on("message", async (msg) => {
 
                     let s = Number(dailyTotalAmount);
                     dailyTotalAmount = (s).toFixed(2);
+
+                    // if (fixedRate === 0.00) {
+                    //     console.log("除数不能为零");
+                    //     bot.sendMessage(chatId, "汇率为零，请先设置汇率!");
+                    //     return;
+                    // }
 
                     showldBeIssued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
 

@@ -14,16 +14,16 @@ let outIssyedStyle = [];
 
 
 let fixedRate = 0.00; //全局变量汇率
-let rate = 0.00; //全局变量汇率
+let rate = 0.00; //全局变量费率
 
-let dailyTotalAmount = 0; //入款总金额
-let numberofEntries = 0; //入账笔数
-let showldBeIssued = 0; //应下发金额
-let showldBeIssuedRmb = 0; //应下发金额rmb
-let issued = 0; //已下发金额
-let issuedRmb = 0; //已下发金额rmb
-let unissued = 0; //未下发金额
-let unissuedRmb = 0; //未下发金额Rmb
+let dailyTotalAmount = 0.00; //入款总金额
+let numberofEntries = 0.00; //入账笔数
+let showldBeIssued = 0.00; //应下发金额
+let showldBeIssuedRmb = 0.00; //应下发金额rmb
+let issued = 0.00; //已下发金额
+let issuedRmb = 0.00; //已下发金额rmb
+let unissued = 0.00; //未下发金额
+let unissuedRmb = 0.00; //未下发金额Rmb
 
 bot.on("message", async (msg) => {
     const chatId = msg.chat.id;
@@ -81,13 +81,17 @@ bot.on("message", async (msg) => {
 
                             showldBeIssued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
 
-                            showldBeIssuedRmb = (dailyTotalAmount * parseFloat(fixedRate)).toFixed(2);
+                            showldBeIssuedRmb = (dailyTotalAmount / parseFloat(fixedRate) * parseFloat(fixedRate)).toFixed(2);
 
                             //已下发金额 = 入款总金额
-                            issued = (parseFloat(issued + dailyTotalAmount)).toFixed(2);
+                            issued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
+
+                            issuedRmb = (dailyTotalAmount / parseFloat(fixedRate) * fixedRate).toFixed(2);
 
                             //未下发金额 = 入款总金额 - 已下发金额
                             unissued = (parseFloat(dailyTotalAmount) - parseFloat(issued)).toFixed(2);
+
+                            unissuedRmb = (parseFloat(dailyTotalAmount - issued) * fixedRate).toFixed(2);
 
                             numberofEntries += 1;
                             await handleIncomingRecord(amountReceived, fixedRate);
@@ -106,6 +110,79 @@ bot.on("message", async (msg) => {
                         }
                     }
                 }
+                if (messageText.startsWith("+")) {
+                    const numberMatch = messageText.match(/(\d+(\.\d{1,2})?)/);
+                    if (numberMatch) {
+                        let num = Number(numberMatch[0]);
+                        const amountReceived = parseFloat(num.toFixed(2));
+                        let s = Number(amountReceived);
+                        if (fixedRate !== null) {
+
+                            dailyTotalAmount = (parseFloat(s) + Number(dailyTotalAmount)).toFixed(2);
+
+                            showldBeIssued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
+
+                            showldBeIssuedRmb = (dailyTotalAmount / parseFloat(fixedRate) * parseFloat(fixedRate)).toFixed(2);
+
+                            //已下发金额 = 入款总金额
+                            issued = (parseFloat(issued + dailyTotalAmount)).toFixed(2);
+
+                            issuedRmb = (parseFloat(issued + dailyTotalAmount) * fixedRate).toFixed(2);
+
+                            //未下发金额 = 入款总金额 - 已下发金额
+                            unissued = (parseFloat(dailyTotalAmount) - parseFloat(issued)).toFixed(2);
+
+                            unissuedRmb = (parseFloat(dailyTotalAmount - issued) * fixedRate).toFixed(2);
+
+                            numberofEntries += 1;
+                            await handleIncomingRecord(amountReceived, fixedRate);
+                            billingStyle = await sendRecordsToUser(incomingRecords);
+                            console.log("查看格式化样式", billingStyle);
+                            await sendPymenTemplate(chatId,
+                                dailyTotalAmount,
+                                showldBeIssued,
+                                issued,
+                                unissued,
+                                numberofEntries,
+                                billingStyle);
+
+                        } else {
+                            bot.sendMessage(chatId, "请先设置汇率!")
+                        }
+                    }
+                }
+                if (messageText.startsWith("显示账单")) {
+
+                    let s = Number(dailyTotalAmount);
+                    dailyTotalAmount = (s).toFixed(2);
+
+                    showldBeIssued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
+
+                    showldBeIssuedRmb = (dailyTotalAmount / parseFloat(fixedRate) * parseFloat(fixedRate)).toFixed(2);
+
+                    //已下发金额 = 入款总金额
+                    issued = (parseFloat(issued + dailyTotalAmount)).toFixed(2);
+
+                    issuedRmb = (parseFloat(issued + dailyTotalAmount) * fixedRate).toFixed(2);
+
+                    //未下发金额 = 入款总金额 - 已下发金额
+                    unissued = (parseFloat(dailyTotalAmount) - parseFloat(issued)).toFixed(2);
+
+                    unissuedRmb = (parseFloat(unissued * fixedRate) ).toFixed(2);
+
+                    numberofEntries += 1;
+                    billingStyle = await sendRecordsToUser(incomingRecords);
+                    console.log("查看格式化样式", billingStyle);
+                    await sendPymenTemplate(chatId,
+                        dailyTotalAmount,
+                        showldBeIssued,
+                        issued,
+                        unissued,
+                        numberofEntries,
+                        billingStyle);
+
+                }
+
             } catch (error) {
                 console.error("处理入账命令出错", error);
             }
@@ -140,8 +217,9 @@ function sendPymenTemplate(chatId,
     <b>费率：</b>${rate}
     <b>固定汇率：</b>${fixedRate}
     <b>应下发：</b>${showldBeIssued}(USDT)${showldBeIssuedRmb}(RMB)
-    <b>已下发：</b>${issued}(USDT)
-    <b>未下发：</b>${unissued}(USDT)`;
+    <b>已下发：</b>${issued}(USDT)${issuedRmb}(RMB)
+    <b>未下发：</b>${unissued}(USDT)${unissuedRmb}(RMB)
+    `;
 
     bot.sendMessage(chatId, message, {
         parse_mode: "HTML",

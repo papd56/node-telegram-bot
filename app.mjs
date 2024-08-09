@@ -28,6 +28,7 @@ let unissuedRmb = 0.00; //未下发金额Rmb
 bot.on("message", async (msg) => {
     const chatId = msg.chat.id;
     const messageText = msg.text;
+    const messageId = msg.message_id;
 
     try {
         const isAdmin = await checkifUserIsAdmin(bot, msg);
@@ -151,6 +152,57 @@ bot.on("message", async (msg) => {
                         }
                     }
                 }
+
+                try {
+                    if (messageText === "删除账单") {
+                        const isAdmin = await checkifUserIsAdmin(bot, msg);
+                        if (isAdmin === 1) {
+                            
+                            // bot.deleteMessage(chatId, messageId)
+                            let s = Number(dailyTotalAmount);
+                            dailyTotalAmount = (s).toFixed(2);
+        
+                            showldBeIssued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
+        
+                            showldBeIssuedRmb = (dailyTotalAmount / parseFloat(fixedRate) * parseFloat(fixedRate)).toFixed(2);
+        
+                            //已下发金额 = 入款总金额
+                            issued = (parseFloat(issued + dailyTotalAmount)).toFixed(2);
+        
+                            issuedRmb = (parseFloat(issued + dailyTotalAmount) * fixedRate).toFixed(2);
+        
+                            //未下发金额 = 入款总金额 - 已下发金额
+                            unissued = (parseFloat(dailyTotalAmount) - parseFloat(issued)).toFixed(2);
+        
+                            unissuedRmb = (parseFloat(unissued * fixedRate)).toFixed(2);
+        
+                            numberofEntries += 1;
+                            billingStyle = await sendRecordsToUser(incomingRecords);
+                            console.log("查看格式化样式", billingStyle);
+                            await deleteBillTemplate(chatId,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0);
+
+                            bot.sendMessage(chatId, "今日账单清理完成");
+
+                        } else {
+                            bot.sendMessage(chatId, "没有操作权限!")
+                        }
+                    }
+
+                } catch (error) {
+                    console.error("操作删除账单错误", error);
+                    throw error;
+                }
+
+
                 if (messageText.startsWith("显示账单")) {
 
                     let s = Number(dailyTotalAmount);
@@ -192,6 +244,46 @@ bot.on("message", async (msg) => {
         throw error;
     }
 });
+
+//删除账单模版
+
+function deleteBillTemplate(chatId,
+    dailyTotalAmount,
+    showldBeIssued,
+    issued,
+    unissued,
+    numberofEntries,
+    billingStyle,
+    showldBeIssuedRmb,
+    issuedRmb,
+    unissuedRmb) {
+    const keyboard = {
+        inline_keyboard: [
+            [
+                { text: "公群导航", url: "https://t.me/dbcksq" },
+                { text: "供求信息", url: "https://t.me/s/TelePlanting" },
+            ],
+        ],
+    };
+
+    const message = `<a href = "https://t.me/@Guik88">518</a>
+    <b>已入款(${numberofEntries}笔: )</b>
+    ${billingStyle}
+    <b>入款总金额：</b>${dailyTotalAmount}
+    <b>费率：</b>${rate}
+    <b>固定汇率：</b>${fixedRate}
+    <b>应下发：</b>${showldBeIssued}(USDT)${showldBeIssuedRmb}(RMB)
+    <b>已下发：</b>${issued}(USDT)${issuedRmb}(RMB)
+    <b>未下发：</b>${unissued}(USDT)${unissuedRmb}(RMB)
+    `;
+
+    bot.sendMessage(chatId, message, {
+        parse_mode: "HTML",
+        reply_markup: keyboard,
+        disable_web_page_preview: true,
+    });
+
+}
 
 //设置回复模版
 function sendPymenTemplate(chatId,

@@ -189,7 +189,7 @@ bot.on("message", async (msg) => {
                                 unissued,
                                 numberofEntries,
                                 billingStyle,
-                                issueRecordsArr,
+                                issueRecords,
                                 issueofEntries);
 
                         } else {
@@ -369,14 +369,14 @@ function deleteBillTemplate(chatId,
     };
 
     const message = `<a href = "https://t.me/@Guik88">518</a>
-    <b>已入款(${numberofEntries}笔: )</b>
+    <b>入款(${numberofEntries}笔: )</b>
     ${billingStyle}
     <b>入款总金额：</b>${dailyTotalAmount}
     <b>费率：</b>${rate}
     <b>固定汇率：</b>${fixedRate}
-    <b>应下发：</b>${showldBeIssued}(USDT)${showldBeIssuedRmb}(RMB)
-    <b>已下发：</b>${issued}(USDT)${issuedRmb}(RMB)
-    <b>未下发：</b>${unissued}(USDT)${unissuedRmb}(RMB)
+    <b>应回款：</b>${showldBeIssued}(USDT)${showldBeIssuedRmb}(RMB)
+    <b>已回款：</b>${issued}(USDT)${issuedRmb}(RMB)
+    <b>未回款：</b>${unissued}(USDT)${unissuedRmb}(RMB)
     `;
 
     bot.sendMessage(chatId, message, {
@@ -407,16 +407,16 @@ function sendPymenTemplate(chatId,
     };
 
     const message = `<a href = "https://t.me/@Guik88">518</a>
-    <b>已入款(${numberofEntries}笔:)</b>
+    <b>入款(${numberofEntries}笔:)</b>
     ${billingStyle.join('\n')}
-    <b>已下发(${issueofEntries}笔:)</b>
+    <b>下发(${issueofEntries}笔:)</b>
     ${issueRecords.join('\n')}
     <b>入款总金额：</b>${dailyTotalAmount}
     <b>费率：</b>${rate}
     <b>固定汇率：</b>${fixedRate}
-    <b>应下发：</b>${showldBeIssued}(USDT)${showldBeIssuedRmb}(RMB)
-    <b>已下发：</b>${issued}(USDT)${issuedRmb}(RMB)
-    <b>未下发：</b>${unissued}(USDT)${unissuedRmb}(RMB)
+    <b>应回款：</b>${showldBeIssued}(USDT)${showldBeIssuedRmb}(RMB)
+    <b>已回款：</b>${issued}(USDT)${issuedRmb}(RMB)
+    <b>未回款：</b>${unissued}(USDT)${unissuedRmb}(RMB)
     `;
 
     bot.sendMessage(chatId, message, {

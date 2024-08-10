@@ -1,0 +1,4 @@
+#billing-data {
+    font-family: monospace; /* 使用等宽字体，保证对齐 */
+    white-space: pre; /* 保持文本格式 */
+  }

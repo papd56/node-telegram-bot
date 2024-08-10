@@ -46,9 +46,10 @@ bot.on("message", async (msg) => {
             const isAdmin = await checkifUserIsAdmin(msg);
             if (isAdmin === 1) {
                 // 置顶命令事件监听
-                bot.onText(/\/pin (.+)/, async (msg, match) => {
-                    const messageId = match[1];
-                    console.log(messageId);
+                console.log("置顶监听事件" + isAdmin)
+                bot.onText("置顶", async () => {
+                    // const messageId = match[1];
+                    console.log("消息 messageid");
                     // 创建自定义键盘
                     const options = {
                         reply_markup: JSON.stringify({
@@ -58,11 +59,11 @@ bot.on("message", async (msg) => {
                         })
                     };
                     // 发送消息并提供自定义键盘
-                    bot.pinChatMessage(chat_id, messageId, options);
+                    await bot.pinChatMessage(chat_id, orignalMessage, options);
 
                     // 发送置顶提醒
-                    bot.sendMessage(chat_id, `置顶成功`, {
-                        reply_to_message_id: messageId
+                    await bot.sendMessage(chat_id, "置顶成功", {
+                        reply_to_message_id: orignalMessage
                     });
                 });
 
@@ -105,7 +106,10 @@ bot.on("message", async (msg) => {
                 });
             }
         }
-    } catch (error) { }
+    } catch (error) {
+        console.log("获取信息出错");
+        throw error
+    }
 
 });
 

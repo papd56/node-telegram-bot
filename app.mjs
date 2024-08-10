@@ -8,8 +8,12 @@ const bot = new TelegramBot(token, {
 
 const incomingRecords = [];
 const outgoingRecords = [];
+const issueRecordsArr = [];
 
+
+let issueRecords = [];
 let billingStyle = [];
+let issUeStyle = [];
 let outIssyedStyle = [];
 
 
@@ -17,7 +21,8 @@ let fixedRate = 0.00; //全局变量汇率
 let rate = 0.00; //全局变量费率
 
 let dailyTotalAmount = 0.00; //入款总金额
-let numberofEntries = 0.00; //入账笔数
+let numberofEntries = 0; //入账笔数
+let issueofEntries = 0; //下发笔数
 let showldBeIssued = 0.00; //应下发金额
 let showldBeIssuedRmb = 0.00; //应下发金额rmb
 let issued = 0.00; //已下发金额
@@ -82,6 +87,7 @@ bot.on("message", async (msg) => {
                             dailyTotalAmount = (parseFloat(s) + Number(dailyTotalAmount)).toFixed(2);
 
                             // if (fixedRate === 0.00) {
+
                             //     console.log("除数不能为零");
                             //     bot.sendMessage(chatId, "汇率为零，请先设置汇率!");
                             //     return;
@@ -102,16 +108,19 @@ bot.on("message", async (msg) => {
                             unissuedRmb = (parseFloat(dailyTotalAmount - issued) * fixedRate).toFixed(2);
 
                             numberofEntries += 1;
-                            await handleIncomingRecord(amountReceived, fixedRate);
-                            billingStyle = await sendRecordsToUser(incomingRecords);
-                            console.log("查看格式化样式", billingStyle);
+                            issueofEntries += 1;
+                            await handleIssueRecords(amountReceived, fixedRate);
+                            issueRecords = await issueSendRecordsToUser(issueRecordsArr);
+                            console.log("查看格式化样式", issueRecordsArr);
                             await sendPymenTemplate(chatId,
                                 dailyTotalAmount,
                                 showldBeIssued,
                                 issued,
                                 unissued,
                                 numberofEntries,
-                                billingStyle);
+                                billingStyle,
+                                issueRecords,
+                                issueofEntries);
 
                         } else {
                             bot.sendMessage(chatId, "请先设置汇率!")
@@ -140,6 +149,57 @@ bot.on("message", async (msg) => {
                     return;
                 }
                 if (messageText.startsWith("+")) {
+                    const numberMatch = messageText.match(/(\d+(\.\d{1,2})?)/);
+                    if (numberMatch) {
+                        let num = Number(numberMatch[0]);
+                        const amountReceived = parseFloat(num.toFixed(2));
+                        let s = Number(amountReceived);
+                        if (fixedRate !== null) {
+
+                            // if (fixedRate === 0.00) {
+                            //     console.log("除数不能为零");
+                            //     bot.sendMessage(chatId, "汇率为零，请先设置汇率!");
+                            //     return;
+                            // }
+
+                            dailyTotalAmount = (parseFloat(s) + Number(dailyTotalAmount)).toFixed(2);
+
+                            showldBeIssued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
+
+                            showldBeIssuedRmb = (dailyTotalAmount / parseFloat(fixedRate) * parseFloat(fixedRate)).toFixed(2);
+
+                            //已下发金额 = 入款总金额
+                            issued = (parseFloat(issued + dailyTotalAmount)).toFixed(2);
+
+                            issuedRmb = (parseFloat(issued + dailyTotalAmount) * fixedRate).toFixed(2);
+
+                            //未下发金额 = 入款总金额 - 已下发金额
+                            unissued = (parseFloat(dailyTotalAmount) - parseFloat(issued)).toFixed(2);
+
+                            unissuedRmb = (parseFloat(dailyTotalAmount - issued) * fixedRate).toFixed(2);
+
+                            numberofEntries += 1;
+                            await handleIncomingRecord(amountReceived, fixedRate);
+                            billingStyle = await sendRecordsToUser(incomingRecords);
+                            console.log("查看格式化样式", billingStyle);
+                            await sendPymenTemplate(chatId,
+                                dailyTotalAmount,
+                                showldBeIssued,
+                                issued,
+                                unissued,
+                                numberofEntries,
+                                billingStyle,
+                                issueRecordsArr,
+                                issueofEntries);
+
+                        } else {
+                            bot.sendMessage(chatId, "请先设置汇率!")
+                        }
+                    }
+                }
+
+                //如果机器人接收到的指令是 -
+                if (messageText.startsWith("-")) {
                     const numberMatch = messageText.match(/(\d+(\.\d{1,2})?)/);
                     if (numberMatch) {
                         let num = Number(numberMatch[0]);
@@ -289,7 +349,6 @@ bot.on("message", async (msg) => {
 });
 
 //删除账单模版
-
 function deleteBillTemplate(chatId,
     dailyTotalAmount,
     showldBeIssued,
@@ -335,7 +394,9 @@ function sendPymenTemplate(chatId,
     issued,
     unissued,
     numberofEntries,
-    billingStyle) {
+    billingStyle,
+    issueRecords,
+    issueofEntries) {
     const keyboard = {
         inline_keyboard: [
             [
@@ -346,8 +407,10 @@ function sendPymenTemplate(chatId,
     };
 
     const message = `<a href = "https://t.me/@Guik88">518</a>
-    <b>已入款(${numberofEntries}笔: )</b>
+    <b>已入款(${numberofEntries}笔:)</b>
     ${billingStyle.join('\n')}
+    <b>已下发(${issueofEntries}笔:)</b>
+    ${issueRecords.join('\n')}
     <b>入款总金额：</b>${dailyTotalAmount}
     <b>费率：</b>${rate}
     <b>固定汇率：</b>${fixedRate}
@@ -381,6 +444,24 @@ async function handleIncomingRecord(amountReceived, fixedRate) {
     incomingRecords.unshift(incomingRecord);
 }
 
+
+//处理下发记录的函数
+async function handleIssueRecords(amountReceived, fixedRate) {
+    const beijingTime = await getBeijingTime();
+    console.log("查看时间格式", beijingTime);
+    const timestamp = Math.floor(beijingTime.toMillis() / 1000);
+
+    const convertedAmount = (amountReceived / fixedRate).toFixed(2);
+    const incomingRecord = {
+        timestamp: timestamp,
+        amountReceived: amountReceived,
+        fixedRate: fixedRate,
+        convertedAmount: convertedAmount,
+    };
+
+    issueRecordsArr.unshift(incomingRecord);
+}
+
 async function getBeijingTime() {
     const beijingTime = DateTime.now().setZone("Asia/Shanghai");
     return beijingTime;
@@ -396,7 +477,17 @@ async function sendRecordsToUser(records) {
     }
     return recordsArr;
 }
-
+//发送下发记录
+async function issueSendRecordsToUser(records) {
+    let issSueArr = [];
+    let text = "";
+    for (const incomingRecord of records) {
+        const formattedRecord = await formatRecordText(incomingRecord);
+        text = formattedRecord;
+        issSueArr.unshift(text);
+    }
+    return issSueArr;
+}
 async function formatRecordText(records) {
     const options = {
         locale: "zh-CN",

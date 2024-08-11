@@ -10,6 +10,8 @@ const bot = new TelegramBot(token, {
 const incomingRecords = [];
 const outgoingRecords = [];
 const issueRecordsArr = [];
+// 替换成OKEx的API接口地址
+const apiUrl = 'https://www.okex.com/api/v5/spot/ticker';
 
 // 假设 messages 是一个数组，用来存储最近的几条消息
 let messages = [];
@@ -47,6 +49,13 @@ bot.on("message", async (msg) => {
         // 使用上一条消息
         console.log("上一条消息:", previousMessage.text);
     }
+
+    // 构造请求头
+    const headers = {
+        'Content-Type': 'application/json',
+        'OK-ACCESS-KEY': "apiKey",
+        // ... 其他需要的头部信息，根据OKEx API文档
+    };
 
     const chatId = msg.chat.id;
     const messageText = msg.text;
@@ -145,6 +154,25 @@ bot.on("message", async (msg) => {
 
                         } else {
                             bot.sendMessage(chatId, "请先设置汇率!")
+                        }
+                    }
+                }
+
+                if (messageText === "z0") {
+                    const isAdmin = await checkifUserIsAdmin(bot, msg);
+                    if (isAdmin === 1) {
+                        try {
+                            const response = await axios.get(url, {
+                                headers
+                            });
+                            const data = response.data;
+                            // 提取Top10数据，并按照汇率排序
+                            const top10Rates = data.data.sort((a, b) => b.price - a.price).slice(0, 10);
+
+                            console.log(top10Rates);
+
+                        } catch (error) {
+                            console.error('获取数据失败:', error);
                         }
                     }
                 }
@@ -395,7 +423,7 @@ bot.on("message", async (msg) => {
 
 
                 if (messageText.startsWith("显示账单") || messageText === "账单") {
-                    
+
                     let s = Number(dailyTotalAmount);
                     dailyTotalAmount = (s).toFixed(2);
 
@@ -502,7 +530,7 @@ function sendPymenTemplate(chatId,
             [
                 { text: "公群导航", url: "https://t.me/dbcksq" },
                 // { text: "供求信息", url: "https://t.me/s/TelePlanting" },
-                { text: "点击跳转完整账单", url: "https://a.jzbot.top/?id=" + chatId },
+                { text: "点击跳转完整账单", url: "https://acbot.top/?id=" + chatId },
             ],
         ],
     };

@@ -1,8 +1,4 @@
 import TelegramBot from 'node-telegram-bot-api';
-const token = "7237081474:AAGs7NVdQkM4FAIad3OPJ-mqTyxAgAIrfsc";
-
-const bot = new TelegramBot(token);
-
 export default async function checkifUserIsAdmin(bot, msg) {
     const chat_id = msg.chat.id;
     const user_id = msg.from.id;

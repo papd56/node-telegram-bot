@@ -1,7 +1,8 @@
 import TelegramBot from 'node-telegram-bot-api';
 import checkifUserIsAdmin from "./adminCheck.mjs"
 import { DateTime } from "luxon";
-const token = "7237081474:AAGs7NVdQkM4FAIad3OPJ-mqTyxAgAIrfsc";
+import axios from 'axios';
+const token = "7237081474:AAGsSnjPvvr1RLOgdrQjA9XNl-JrV0bQ-5o";
 const bot = new TelegramBot(token, {
     polling: true,
 });
@@ -34,6 +35,7 @@ bot.on("message", async (msg) => {
     const chatId = msg.chat.id;
     const messageText = msg.text;
     const messageId = msg.message_id;
+    const boostId = msg.from.id;
 
     try {
         const isAdmin = await checkifUserIsAdmin(bot, msg);
@@ -92,7 +94,10 @@ bot.on("message", async (msg) => {
                             //     bot.sendMessage(chatId, "汇率为零，请先设置汇率!");
                             //     return;
                             // }
-
+                            if (fixedRate === 0) {
+                                const response = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=usd');
+                                fixedRate = response.data.tether.usd.toFixed(2);
+                            }
                             showldBeIssued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
 
                             showldBeIssuedRmb = (dailyTotalAmount / parseFloat(fixedRate) * parseFloat(fixedRate)).toFixed(2);
@@ -133,6 +138,7 @@ bot.on("message", async (msg) => {
                             [
                                 { text: "公群导航", url: "https://t.me/dbcksq" },
                                 { text: "供求信息", url: "https://t.me/s/TelePlanting" },
+                                { text: "点击跳转完整账单", url: "https://a.jzbot.top/?id=" + chatId },
                             ],
                         ],
                     };
@@ -161,6 +167,11 @@ bot.on("message", async (msg) => {
                             //     bot.sendMessage(chatId, "汇率为零，请先设置汇率!");
                             //     return;
                             // }
+                            if (fixedRate === 0) {
+                                const response = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=usd');
+                                fixedRate = response.data.tether.usd.toFixed(2);
+                                console.log("官网实时固定汇率：>>>>>>>>>>>>>>>>" +  fixedRate)
+                            }
 
                             dailyTotalAmount = (parseFloat(s) + Number(dailyTotalAmount)).toFixed(2);
 
@@ -198,7 +209,7 @@ bot.on("message", async (msg) => {
                     }
                 }
 
-                //如果机器人接收到的指令是 -
+                //如果机器人接收到的指令是 - 做减法
                 if (messageText.startsWith("-")) {
                     const numberMatch = messageText.match(/(\d+(\.\d{1,2})?)/);
                     if (numberMatch) {
@@ -212,6 +223,11 @@ bot.on("message", async (msg) => {
                             //     bot.sendMessage(chatId, "汇率为零，请先设置汇率!");
                             //     return;
                             // }
+
+                            if (fixedRate === 0) {
+                                const response = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=usd');
+                                fixedRate = response.data.tether.usd.toFixed(2);
+                            }
 
                             dailyTotalAmount = (parseFloat(s) + Number(dailyTotalAmount)).toFixed(2);
 
@@ -247,6 +263,19 @@ bot.on("message", async (msg) => {
                     }
                 }
 
+                // //删除聊天机器人
+                // try {
+                //     if (messageText.startsWith("踢出")) {
+                //         const isAdmin = await checkifUserIsAdmin(bot, msg);
+                //         if (isAdmin === 1) {
+                //             bot.logOut(true);
+                //             bot.sendMessage(chatId, "已踢出");
+                //         }
+                //     }
+                // } catch (error) {
+                //     console.log("机器人删除失败!");
+                //     throw error;
+                // }
                 try {
                     if (messageText === "删除账单") {
                         const isAdmin = await checkifUserIsAdmin(bot, msg);
@@ -257,6 +286,11 @@ bot.on("message", async (msg) => {
                             // bot.deleteMessage(chatId, messageId)
                             let s = Number(dailyTotalAmount);
                             dailyTotalAmount = (s).toFixed(2);
+
+                            if (fixedRate === 0) {
+                                const response = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=usd');
+                                fixedRate = response.data.tether.usd.toFixed(2);
+                            }
 
                             showldBeIssued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
 
@@ -311,6 +345,11 @@ bot.on("message", async (msg) => {
                     //     return;
                     // }
 
+                    if (fixedRate === 0) {
+                        const response = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=usd');
+                        fixedRate = response.data.tether.usd.toFixed(2);
+                    }
+
                     showldBeIssued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
 
                     showldBeIssuedRmb = (dailyTotalAmount / parseFloat(fixedRate) * parseFloat(fixedRate)).toFixed(2);
@@ -334,8 +373,9 @@ bot.on("message", async (msg) => {
                         issued,
                         unissued,
                         numberofEntries,
-                        billingStyle);
-
+                        billingStyle,
+                        issueRecords,
+                        issueofEntries);
                 }
 
             } catch (error) {
@@ -374,9 +414,9 @@ function deleteBillTemplate(chatId,
     <b>入款总金额：</b>${dailyTotalAmount}
     <b>费率：</b>${rate}
     <b>固定汇率：</b>${fixedRate}
-    <b>应回款：</b>${showldBeIssued}(USDT)${showldBeIssuedRmb}(RMB)
-    <b>已回款：</b>${issued}(USDT)${issuedRmb}(RMB)
-    <b>未回款：</b>${unissued}(USDT)${unissuedRmb}(RMB)
+    <b>应下发：</b>${showldBeIssued}(USDT)${showldBeIssuedRmb}(RMB)
+    <b>已下发：</b>${issued}(USDT)${issuedRmb}(RMB)
+    <b>未下发：</b>${unissued}(USDT)${unissuedRmb}(RMB)
     `;
 
     bot.sendMessage(chatId, message, {
@@ -401,7 +441,8 @@ function sendPymenTemplate(chatId,
         inline_keyboard: [
             [
                 { text: "公群导航", url: "https://t.me/dbcksq" },
-                { text: "供求信息", url: "https://t.me/s/TelePlanting" },
+                // { text: "供求信息", url: "https://t.me/s/TelePlanting" },
+                { text: "点击跳转完整账单", url: "https://a.jzbot.top/?id=" + chatId },
             ],
         ],
     };
@@ -414,9 +455,9 @@ function sendPymenTemplate(chatId,
     <b>入款总金额：</b>${dailyTotalAmount}
     <b>费率：</b>${rate}
     <b>固定汇率：</b>${fixedRate}
-    <b>应回款：</b>${showldBeIssued}(USDT)${showldBeIssuedRmb}(RMB)
-    <b>已回款：</b>${issued}(USDT)${issuedRmb}(RMB)
-    <b>未回款：</b>${unissued}(USDT)${unissuedRmb}(RMB)
+    <b>应下发：</b>${showldBeIssued}(USDT)
+    <b>已下发：</b>${issued}(USDT)
+    <b>未下发：</b>${unissued}(USDT)
     `;
 
     bot.sendMessage(chatId, message, {
@@ -451,7 +492,7 @@ async function handleIssueRecords(amountReceived, fixedRate) {
     console.log("查看时间格式", beijingTime);
     const timestamp = Math.floor(beijingTime.toMillis() / 1000);
 
-    const convertedAmount = (amountReceived / fixedRate).toFixed(2);
+    const convertedAmount = (amountReceived * fixedRate).toFixed(2);
     const incomingRecord = {
         timestamp: timestamp,
         amountReceived: amountReceived,
@@ -482,12 +523,29 @@ async function issueSendRecordsToUser(records) {
     let issSueArr = [];
     let text = "";
     for (const incomingRecord of records) {
-        const formattedRecord = await formatRecordText(incomingRecord);
+        const formattedRecord = await issueFormatRecordText(incomingRecord);
         text = formattedRecord;
         issSueArr.unshift(text);
     }
     return issSueArr;
 }
+
+//处理已下发
+async function issueFormatRecordText(records) {
+    const options = {
+        locale: "zh-CN",
+        hour12: false,
+    };
+    const timestamp = new Date(records.timestamp * 1000).toLocaleTimeString(
+        "zh-CN",
+        options
+    );
+    const foormatRecordText = `${timestamp} ${records.amountReceived} * ${records.fixedRate} = ${records.convertedAmount}(RMB)`;
+    return foormatRecordText;
+
+}
+
+
 async function formatRecordText(records) {
     const options = {
         locale: "zh-CN",
@@ -500,4 +558,26 @@ async function formatRecordText(records) {
     const foormatRecordText = `${timestamp} ${records.amountReceived} / ${records.fixedRate} = ${records.convertedAmount}`;
     return foormatRecordText;
 
+}
+
+//获取欧易usd实时汇率
+async function getUsdtPrice() {
+    try {
+        const response = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=usd');
+        const usdtPrice = response.data.tether.usd;
+        console.log('USDT价格:', usdtPrice);
+    } catch (error) {
+        console.error('获取USDT价格失败:', error);
+    }
+}
+
+
+//删除聊天机器人
+async function deleteChatBot() {
+    const options = {
+        chat: chat,
+        boostId: boost_id,
+        remove_date: remove_date,
+        source: source
+    }
 }

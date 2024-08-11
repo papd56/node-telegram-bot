@@ -340,7 +340,7 @@ bot.on("message", async (msg) => {
                 //     throw error;
                 // }
                 try {
-                    if (messageText === "删除账单" || messageText === "账单") {
+                    if (messageText === "删除账单") {
                         const isAdmin = await checkifUserIsAdmin(bot, msg);
                         if (isAdmin === 1) {
                             // bot.deleteMessage(chatId, messageId)
@@ -394,8 +394,8 @@ bot.on("message", async (msg) => {
                 }
 
 
-                if (messageText.startsWith("显示账单")) {
-
+                if (messageText.startsWith("显示账单") || messageText === "账单") {
+                    
                     let s = Number(dailyTotalAmount);
                     dailyTotalAmount = (s).toFixed(2);
 

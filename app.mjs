@@ -2,16 +2,25 @@ import TelegramBot from 'node-telegram-bot-api';
 import checkifUserIsAdmin from "./adminCheck.mjs"
 import { DateTime } from "luxon";
 import axios from 'axios';
+import NodeCache from 'node-cache';
 const token = "7237081474:AAGsSnjPvvr1RLOgdrQjA9XNl-JrV0bQ-5o";
 const bot = new TelegramBot(token, {
     polling: true,
 });
 
+// 创建一个缓存实例，设置缓存过期时间为 10 秒
+const myCache = new NodeCache({ stdTTL: 1800 });
+
+//下发缓存key
+const isueCacheKey = 'isueCacheKey';
+//+钱缓存key
+const inComingRecordKey = 'inComingRecordKey';
+
 const incomingRecords = [];
 const outgoingRecords = [];
 const issueRecordsArr = [];
 // 替换成OKEx的API接口地址
-const apiUrl = 'https://www.okex.com/api/v5/spot/ticker';
+const apiUrl = 'https://www.okx.com/api/v5/market/tickers?instType=SPOT';
 
 // 假设 messages 是一个数组，用来存储最近的几条消息
 let messages = [];
@@ -146,9 +155,8 @@ bot.on("message", async (msg) => {
                             numberofEntries += 1;
                             issueofEntries += 1;
                             await handleIssueRecords(amountReceived, fixedRate);
+                            const issueRecordsArr = myCache.get(isueCacheKey);
                             issueRecords = await issueSendRecordsToUser(issueRecordsArr);
-                            issueTodayTransaction.push(issueRecordsArr);
-                            console.log("查看格式化样式", issueRecordsArr);
                             await sendPymenTemplate(chatId,
                                 dailyTotalAmount,
                                 showldBeIssued,
@@ -169,15 +177,7 @@ bot.on("message", async (msg) => {
                     const isAdmin = await checkifUserIsAdmin(bot, msg);
                     if (isAdmin === 1) {
                         try {
-                            const response = await axios.get(apiUrl, {
-                                headers
-                            });
-                            const data = response.data;
-                            // 提取Top10数据，并按照汇率排序
-                            const top10Rates = data.data.sort((a, b) => b.price - a.price).slice(0, 10);
-
-                            console.log(top10Rates);
-
+                            await handleMessage(bot,msg);
                         } catch (error) {
                             await bot.sendMessage(chatId, '获取数据失败，请稍后再试');
                         }
@@ -189,15 +189,9 @@ bot.on("message", async (msg) => {
 
                 if (messageText === "+0") {
                     if (previousMessage.text === "删除账单") {
-                        const keyboard = {
-                            inline_keyboard: [
-                                [
-                                    { text: "公群导航", url: "https://t.me/dbcksq" },
-                                    { text: "供求信息", url: "https://t.me/s/TelePlanting" },
-                                    { text: "点击跳转完整账单", url: "https://a.jzbot.top/?id=" + chatId },
-                                ],
-                            ],
-                        };
+                        myCache.del(inComingRecordKey);
+                        myCache.del(isueCacheKey);
+                        console.log(myCache.get(isueCacheKey))
                         await deleteBillTemplate(chatId,
                             0,
                             0,
@@ -209,8 +203,6 @@ bot.on("message", async (msg) => {
                             0,
                             0,
                             0);
-                        clearArray(incomingRecords);
-                        clearArray(issueRecordsArr);
                         return;
                     } else {
                         let s = Number(dailyTotalAmount);
@@ -241,10 +233,12 @@ bot.on("message", async (msg) => {
 
                         unissuedRmb = (parseFloat(unissued * fixedRate)).toFixed(2);
 
-                        // numberofEntries += 1;
-                        issueRecords = await issueSendRecordsToUser(issueRecordsArr);
-                        billingStyle = await sendRecordsToUser(incomingRecords);
-                        todayTransaction.push(incomingRecords);
+                        // // numberofEntries += 1;
+                        // issueRecords = await issueSendRecordsToUser(issueRecordsArr);
+                        // billingStyle = await sendRecordsToUser(incomingRecords);
+                        //从缓存获取
+                        // const issueRecords = myCache.get(isueCacheKey);
+                        // const billingStyle = myCache.get(inComingRecordKey);
                         console.log("查看格式化样式", billingStyle);
                         await sendPymenTemplate(chatId,
                             dailyTotalAmount,
@@ -295,11 +289,10 @@ bot.on("message", async (msg) => {
                             unissuedRmb = (parseFloat(dailyTotalAmount - issued) * fixedRate).toFixed(2);
 
                             numberofEntries += 1;
+
                             await handleIncomingRecord(amountReceived, fixedRate);
-                            billingStyle = await sendRecordsToUser(incomingRecords);
-                            //将今日交易数据放入缓存
-                            todayTransaction.push(incomingRecords);
-                            console.log("查看格式化样式", billingStyle);
+                            const issueRecordsArr = myCache.get(inComingRecordKey);
+                            billingStyle = await sendRecordsToUser(issueRecordsArr);
                             await sendPymenTemplate(chatId,
                                 dailyTotalAmount,
                                 showldBeIssued,
@@ -361,7 +354,7 @@ bot.on("message", async (msg) => {
                                 numberofEntries += 1;
                                 await handleIncomingRecord(amountReceived, fixedRate);
                                 billingStyle = await sendRecordsToUser(incomingRecords);
-                                todayTransaction.push(incomingRecords);
+                                myCache.set(inComingRecordKey, billingStyle);
                                 console.log("查看格式化样式", billingStyle);
                                 await sendPymenTemplate(chatId,
                                     dailyTotalAmount,
@@ -547,24 +540,15 @@ bot.on("message", async (msg) => {
 
                             billingStyle = await sendRecordsToUser(incomingRecords);
                             console.log("查看格式化样式", billingStyle);
-                            await deleteBillTemplate(chatId,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0);
-                            todayTransaction.shift(incomingRecords);
-                            issueTodayTransaction.shift(issueRecordsArr);
+
                             clearArray(incomingRecords);
                             clearArray(issueRecordsArr);
+                            myCache.del(inComingRecordKey);
+                            myCache.del(isueCacheKey);
+                            console.log(myCache.get(inComingRecordKey))
+                            console.log(myCache.get(isueCacheKey))
                             bot.sendMessage(chatId, "本次账单清理完成！", {
                                 reply_to_message_id: originalMessageId
-
                             });
                         } else {
                             bot.sendMessage(chatId, "没有操作权限!")
@@ -630,7 +614,49 @@ bot.on("message", async (msg) => {
     }
 });
 
+
 //删除账单模版
+function deleteBill(chatId,
+    dailyTotalAmount,
+    showldBeIssued,
+    issued,
+    unissued,
+    numberofEntries,
+    issueofEntries,
+    billingStyle,
+    showldBeIssuedRmb,
+    issuedRmb,
+    unissuedRmb) {
+    const keyboard = {
+        inline_keyboard: [
+            [
+                { text: "公群导航", url: "https://t.me/dbcksq" },
+                { text: "供求信息", url: "https://t.me/s/TelePlanting" },
+            ],
+        ],
+    };
+
+    const message = `<a href = "https://t.me/@Guik88">518</a>
+    <b>入款(${numberofEntries}笔: )</b>
+    ${billingStyle}
+    <b>入款(${issueofEntries}笔: )</b>
+    <b>入款总金额：</b>${dailyTotalAmount}
+    <b>费率：</b>${rate}
+    <b>固定汇率：</b>${fixedRate}
+    <b>应下发：</b>${showldBeIssued}(USDT)${showldBeIssuedRmb}(RMB)
+    <b>已下发：</b>${issued}(USDT)${issuedRmb}(RMB)
+    <b>未下发：</b>${unissued}(USDT)${unissuedRmb}(RMB)
+    `;
+    bot.sendMessage(chatId, message, {
+        parse_mode: "HTML",
+        reply_markup: keyboard,
+        disable_web_page_preview: true,
+    });
+
+}
+
+
+//+0账单模版
 function deleteBillTemplate(chatId,
     dailyTotalAmount,
     showldBeIssued,
@@ -727,6 +753,7 @@ async function handleIncomingRecord(amountReceived, fixedRate) {
     };
 
     incomingRecords.unshift(incomingRecord);
+    myCache.set(inComingRecordKey, incomingRecords);
 }
 
 
@@ -745,6 +772,7 @@ async function handleIssueRecords(amountReceived, fixedRate) {
     };
 
     issueRecordsArr.unshift(incomingRecord);
+    myCache.set(isueCacheKey, issueRecordsArr);
 }
 
 async function getBeijingTime() {
@@ -830,8 +858,50 @@ async function deleteChatBot() {
     }
 }
 
+//清空数组
 function clearArray(arr) {
-    while (arr.length > 0) {
-        arr.shift();
+    arr.length = 0;
+}
+
+async function getTop10Rates(bot, msg, chatId) {
+    const messageText = msg.text;
+
+    if (messageText === "z0") {
+        const isAdmin = await checkifUserIsAdmin(bot, msg);
+        if (isAdmin === 1) {
+            try {
+                const response = await axios.get(apiUrl);
+                const data = response.data;
+
+                // 检查数据是否存在
+                if (data && data.data) {
+                    // 按价格排序并获取前10名
+                    const top10Rates = data.data.sort((a, b) => parseFloat(b.last) - parseFloat(a.last)).slice(0, 10);
+
+                    // 生成输出消息
+                    let output = 'OKX 排行榜前十的币种汇率top10:\n';
+                    top10Rates.forEach((item, index) => {
+                        output += `${index + 1}. ${item.instId}: $${item.last}\n`;
+                    });
+
+                    // 发送结果
+                    await bot.sendMessage(chatId, output);
+                } else {
+                    await bot.sendMessage(chatId, '无法获取数据，请稍后再试');
+                }
+            } catch (error) {
+                console.error(error);
+                await bot.sendMessage(chatId, '获取数据失败，请稍后再试');
+            }
+        } else {
+            // 非管理员用户，返回提示信息
+            await bot.sendMessage(chatId, '您没有权限执行此操作');
+        }
     }
+}
+
+// 假设这是一个处理消息的函数
+async function handleMessage(bot, msg) {
+    const chatId = msg.chat.id;
+    await getTop10Rates(bot, msg, chatId);
 }

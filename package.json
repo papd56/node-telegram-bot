@@ -39,6 +39,7 @@
     "file-type": "^3.9.0",
     "luxon": "^3.5.0",
     "mime": "^1.6.0",
+    "node-cache": "^5.1.2",
     "node-telegram-bot-api": "^0.66.0",
     "pump": "^2.0.0",
     "react-native-validator-form": "^1.0.0"

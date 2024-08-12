@@ -165,7 +165,6 @@ bot.on("message", async (msg) => {
                             numberofEntries += 1;
                             issueofEntries += 1;
                             await handleIssueRecords(amountReceived, fixedRate);
-                            const issueRecordsArr = myCache.get(isueCacheKey);
                             issueRecords = await issueSendRecordsToUser(issueRecordsArr);
                             await sendPymenTemplate(chatId,
                                 dailyTotalAmount,
@@ -201,9 +200,8 @@ bot.on("message", async (msg) => {
 
                 if (messageText === "+0") {
                     if (previousMessage.text === "删除账单") {
-                        myCache.del(inComingRecordKey);
-                        myCache.del(isueCacheKey);
-                        console.log(myCache.get(isueCacheKey))
+                        numberofEntries = 0;
+                        issueofEntries = 0;
                         await deleteBillTemplate(chatId,
                             0,
                             0,
@@ -217,52 +215,63 @@ bot.on("message", async (msg) => {
                             0);
                         return;
                     } else {
-                        let s = Number(dailyTotalAmount);
-                        dailyTotalAmount = (s).toFixed(2);
 
-                        // if (fixedRate === 0.00) {
-                        //     console.log("除数不能为零");
-                        //     bot.sendMessage(chatId, "汇率为零，请先设置汇率!");
-                        //     return;
-                        // }
+                        const numberMatch = messageText.match(/(\d+(\.\d{1,2})?)/);
+                        if (numberMatch) {
+                            let num = Number(numberMatch[0]);
+                            const amountReceived = parseFloat(num.toFixed(2));
+                            let s = Number(amountReceived);
+                            if (fixedRate !== null) {
 
-                        if (fixedRate === 0) {
-                            const response = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=usd');
-                            fixedRate = response.data.tether.usd.toFixed(2);
+                                // if (fixedRate === 0.00) {
+                                //     console.log("除数不能为零");
+                                //     bot.sendMessage(chatId, "汇率为零，请先设置汇率!");
+                                //     return;
+                                // }
+                                if (fixedRate === 0) {
+                                    const response = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=usd');
+                                    fixedRate = response.data.tether.usd.toFixed(2);
+                                    console.log("官网实时固定汇率：>>>>>>>>>>>>>>>>" + fixedRate)
+                                }
+
+                                dailyTotalAmount = 0;
+
+                                showldBeIssued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
+
+                                showldBeIssuedRmb = (dailyTotalAmount / parseFloat(fixedRate) * parseFloat(fixedRate)).toFixed(2);
+
+                                //已下发金额 = 入款总金额
+                                issued = (parseFloat(issued + dailyTotalAmount)).toFixed(2);
+
+                                issuedRmb = (parseFloat(issued + dailyTotalAmount) * fixedRate).toFixed(2);
+
+                                //未下发金额 = 入款总金额 - 已下发金额
+                                unissued = (parseFloat(dailyTotalAmount) - parseFloat(issued)).toFixed(2);
+
+                                unissuedRmb = (parseFloat(dailyTotalAmount - issued) * fixedRate).toFixed(2);
+
+                                numberofEntries += 0;
+                                issueofEntries += 0;
+                                // billingStyle = [];
+                                // await handleIncomingRecord(amountReceived, fixedRate);
+                                // await handleIssueRecords(amountReceived, fixedRate);
+                                // const issueRecordsArr = myCache.get(inComingRecordKey);
+                                billingStyle = await sendRecordsToUser(incomingRecords);
+                                issueRecords = await issueSendRecordsToUser(issueRecordsArr);
+                                await sendPymenTemplate(chatId,
+                                    dailyTotalAmount,
+                                    showldBeIssued,
+                                    issued,
+                                    unissued,
+                                    numberofEntries,
+                                    billingStyle,
+                                    issueRecords,
+                                    issueofEntries);
+                                return;
+                            } else {
+                                bot.sendMessage(chatId, "请先设置汇率!")
+                            }
                         }
-
-                        showldBeIssued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
-
-                        showldBeIssuedRmb = (dailyTotalAmount / parseFloat(fixedRate) * parseFloat(fixedRate)).toFixed(2);
-
-                        //已下发金额 = 入款总金额
-                        issued = (parseFloat(issued + dailyTotalAmount)).toFixed(2);
-
-                        issuedRmb = (parseFloat(issued + dailyTotalAmount) * fixedRate).toFixed(2);
-
-                        //未下发金额 = 入款总金额 - 已下发金额
-                        unissued = (parseFloat(dailyTotalAmount) - parseFloat(issued)).toFixed(2);
-
-                        unissuedRmb = (parseFloat(unissued * fixedRate)).toFixed(2);
-
-                        numberofEntries += 1;
-
-                        issueofEntries += 1;
-                        await handleIncomingRecord(amountReceived, fixedRate);
-                        await handleIssueRecords(amountReceived, fixedRate);
-                        // const issueRecordsArr = myCache.get(inComingRecordKey);
-                        billingStyle = await sendRecordsToUser(incomingRecords);
-                        issueRecords = await issueSendRecordsToUser(issueRecordsArr);
-                        console.log("查看格式化样式", billingStyle);
-                        await sendPymenTemplate(chatId,
-                            dailyTotalAmount,
-                            showldBeIssued,
-                            issued,
-                            unissued,
-                            numberofEntries,
-                            billingStyle,
-                            issueRecords,
-                            issueofEntries);
                     }
                     return;
                 }
@@ -368,7 +377,6 @@ bot.on("message", async (msg) => {
                                 numberofEntries += 1;
                                 await handleIncomingRecord(amountReceived, fixedRate);
                                 billingStyle = await sendRecordsToUser(incomingRecords);
-                                myCache.set(inComingRecordKey, billingStyle);
                                 console.log("查看格式化样式", billingStyle);
                                 await sendPymenTemplate(chatId,
                                     dailyTotalAmount,
@@ -557,10 +565,6 @@ bot.on("message", async (msg) => {
 
                             clearArray(incomingRecords);
                             clearArray(issueRecordsArr);
-                            myCache.del(inComingRecordKey);
-                            myCache.del(isueCacheKey);
-                            console.log(myCache.get(inComingRecordKey))
-                            console.log(myCache.get(isueCacheKey))
                             bot.sendMessage(chatId, "本次账单清理完成！", {
                                 reply_to_message_id: originalMessageId
                             });
@@ -767,7 +771,6 @@ async function handleIncomingRecord(amountReceived, fixedRate) {
     };
 
     incomingRecords.unshift(incomingRecord);
-    myCache.set(inComingRecordKey, incomingRecords);
 }
 
 
@@ -786,7 +789,6 @@ async function handleIssueRecords(amountReceived, fixedRate) {
     };
 
     issueRecordsArr.unshift(incomingRecord);
-    myCache.set(isueCacheKey, issueRecordsArr);
 }
 
 async function getBeijingTime() {

@@ -22,6 +22,9 @@ const issueRecordsArr = [];
 // 替换成OKEx的API接口地址
 const apiUrl = 'https://www.okx.com/api/v5/market/tickers?instType=SPOT';
 
+// OKEx 公共接口 URL (请根据 OKEx 官方文档更新)
+const baseUrl = 'https://www.okx.com/api/v5/market/';
+
 // 假设 messages 是一个数组，用来存储最近的几条消息
 let messages = [];
 //今日交易数据
@@ -47,6 +50,20 @@ let issuedRmb = 0.00; //已下发金额rmb
 let unissued = 0.00; //未下发金额
 let unissuedRmb = 0.00; //未下发金额Rmb
 
+// 替换为你的 OKEx API 密钥和密钥秘钥
+const apiKey = '56b9768f-1b05-4225-b3b9-ae1e29afe22d';
+const secretKey = '2A178FE570AD0E75A3C7679B07681C55';
+
+
+// 构造请求头
+const headers = {
+    'Content-Type': 'application/json',
+    'OK-ACCESS-KEY': "56b9768f-1b05-4225-b3b9-ae1e29afe22d",
+    'OK-ACCESS-PASSPHRASE': "Asdzxc1230.",
+    'OK-ACCESS-TIMESTAMP': Date.now() / 1000
+    // ... 其他需要的头部信息，根据OKEx API文档
+};
+
 bot.on("message", async (msg) => {
     // 将当前消息添加到缓存中
     messages.push(msg);
@@ -63,14 +80,7 @@ bot.on("message", async (msg) => {
         console.log("上一条消息:", previousMessage.text);
     }
 
-    // 构造请求头
-    const headers = {
-        'Content-Type': 'application/json',
-        'OK-ACCESS-KEY': "56b9768f-1b05-4225-b3b9-ae1e29afe22d",
-        'OK-ACCESS-PASSPHRASE': "Asdzxc1230.",
-        'OK-ACCESS-TIMESTAMP': Date.now() / 1000
-        // ... 其他需要的头部信息，根据OKEx API文档
-    };
+
 
     const chatId = msg.chat.id;
     const messageText = msg.text;
@@ -177,7 +187,9 @@ bot.on("message", async (msg) => {
                     const isAdmin = await checkifUserIsAdmin(bot, msg);
                     if (isAdmin === 1) {
                         try {
-                            await handleMessage(bot,msg);
+                            // await handleMessage(bot, msg);
+                            // 获取所有交易对信息
+                            await getMarketData();
                         } catch (error) {
                             await bot.sendMessage(chatId, '获取数据失败，请稍后再试');
                         }
@@ -904,4 +916,61 @@ async function getTop10Rates(bot, msg, chatId) {
 async function handleMessage(bot, msg) {
     const chatId = msg.chat.id;
     await getTop10Rates(bot, msg, chatId);
+}
+
+
+//第二种方案
+// 获取所有交易对信息
+async function getAllTradingPairs() {
+    const response = await axios.get(`${baseUrl}/instruments`);
+    return response.data.data;
+}
+
+// 计算交易对的交易量
+async function calculateTradingVolume(tradingPair) {
+    // 根据 OKEx 的交易量接口构造请求 URL
+    const volumeUrl = `${baseUrl}/instruments/${tradingPair}/ticker`;
+    const volumeResponse = await axios.get(volumeUrl);
+    return volumeResponse.data.data.volume;
+}
+
+// 获取 Top 10 交易量币种
+async function getTop10ByVolume() {
+    const allPairs = await getAllTradingPairs();
+    const pairsWithVolume = await Promise.all(
+        allPairs.map(async (pair) => {
+            const volume = await calculateTradingVolume(pair.instrument_id);
+            return {
+                pair: pair.instrument_id,
+                volume,
+            };
+        })
+    );
+
+    // 根据交易量排序并取前 10 名
+    const top10 = pairsWithVolume.sort((a, b) => b.volume - a.volume).slice(0, 10);
+    return top10;
+}
+
+//第三种方案
+// 获取市场数据的函数
+async function getMarketData() {
+    try {
+        // 请求实时汇率数据
+        const response = await axios.get(`${baseUrl}tickers`);
+
+        // 从响应中提取数据
+        const tickers = response.data.data;
+
+        // 提取前 10 个交易对
+        const top10Tickers = tickers.slice(0, 10);
+
+        // 输出结果
+        console.log('Top 10 Real-Time Tickers:');
+        top10Tickers.forEach((ticker, index) => {
+            console.log(`${index + 1}. Symbol: ${ticker.instId}, Last Price: ${ticker.last}`);
+        });
+    } catch (error) {
+        console.error('Error fetching market data:', error.message);
+    }
 }

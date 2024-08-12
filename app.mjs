@@ -562,7 +562,7 @@ bot.on("message", async (msg) => {
                             issueTodayTransaction.shift(issueRecordsArr);
                             clearArray(incomingRecords);
                             clearArray(issueRecordsArr);
-                            bot.sendMessage(chatId, "今日账单清理完成", {
+                            bot.sendMessage(chatId, "本次账单清理完成！", {
                                 reply_to_message_id: originalMessageId
 
                             });

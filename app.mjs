@@ -53,7 +53,9 @@ bot.on("message", async (msg) => {
     // 构造请求头
     const headers = {
         'Content-Type': 'application/json',
-        'OK-ACCESS-KEY': "apiKey",
+        'OK-ACCESS-KEY': "56b9768f-1b05-4225-b3b9-ae1e29afe22d",
+        'OK-ACCESS-PASSPHRASE':"Asdzxc1230.",
+        'OK-ACCESS-TIMESTAMP': Date.now() / 1000
         // ... 其他需要的头部信息，根据OKEx API文档
     };
 
@@ -162,7 +164,7 @@ bot.on("message", async (msg) => {
                     const isAdmin = await checkifUserIsAdmin(bot, msg);
                     if (isAdmin === 1) {
                         try {
-                            const response = await axios.get(url, {
+                            const response = await axios.get(apiUrl, {
                                 headers
                             });
                             const data = response.data;
@@ -172,8 +174,11 @@ bot.on("message", async (msg) => {
                             console.log(top10Rates);
 
                         } catch (error) {
-                            console.error('获取数据失败:', error);
+                            await bot.sendMessage(chatId, '获取数据失败，请稍后再试');
                         }
+                    } else {
+                        // 非管理员用户，返回提示信息
+                        await bot.sendMessage(chatId, '您没有权限执行此操作');
                     }
                 }
 
@@ -228,7 +233,7 @@ bot.on("message", async (msg) => {
 
                         unissuedRmb = (parseFloat(unissued * fixedRate)).toFixed(2);
 
-                        numberofEntries += 1;
+                        // numberofEntries += 1;
                         billingStyle = await sendRecordsToUser(incomingRecords);
                         console.log("查看格式化样式", billingStyle);
                         await sendPymenTemplate(chatId,
@@ -236,15 +241,13 @@ bot.on("message", async (msg) => {
                             showldBeIssued,
                             issued,
                             unissued,
-                            numberofEntries,
+                            0,
                             billingStyle,
                             issueRecords,
                             issueofEntries);
                     }
                     return;
                 }
-
-
 
                 if (messageText.startsWith("+") && !checkForSpecialChars(messageText)) {
                     const numberMatch = messageText.match(/(\d+(\.\d{1,2})?)/);
@@ -347,7 +350,6 @@ bot.on("message", async (msg) => {
                         return;
                     }
                 }
-
 
                 //如果机器人接收到的指令是 - 做减法
                 // if (messageText.startsWith("-")) {
@@ -469,7 +471,6 @@ bot.on("message", async (msg) => {
                     console.error("操作删除账单错误", error);
                     throw error;
                 }
-
 
                 if (messageText.startsWith("显示账单") || messageText === "账单") {
 
@@ -707,12 +708,11 @@ async function getUsdtPrice() {
         console.error('获取USDT价格失败:', error);
     }
 }
-
+//正则匹配校验是否包含（/ 或者 *）
 function checkForSpecialChars(messageText) {
     const regex = /[\/\*]/; // 匹配 / 或 *
     return regex.test(messageText);
 }
-
 
 //删除聊天机器人
 async function deleteChatBot() {

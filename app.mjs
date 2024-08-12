@@ -15,6 +15,10 @@ const apiUrl = 'https://www.okex.com/api/v5/spot/ticker';
 
 // 假设 messages 是一个数组，用来存储最近的几条消息
 let messages = [];
+//今日交易数据
+let todayTransaction = [];
+//下发今日交易数据
+let issueTodayTransaction = [];
 let issueRecords = [];
 let billingStyle = [];
 let issUeStyle = [];
@@ -54,7 +58,7 @@ bot.on("message", async (msg) => {
     const headers = {
         'Content-Type': 'application/json',
         'OK-ACCESS-KEY': "56b9768f-1b05-4225-b3b9-ae1e29afe22d",
-        'OK-ACCESS-PASSPHRASE':"Asdzxc1230.",
+        'OK-ACCESS-PASSPHRASE': "Asdzxc1230.",
         'OK-ACCESS-TIMESTAMP': Date.now() / 1000
         // ... 其他需要的头部信息，根据OKEx API文档
     };
@@ -143,6 +147,7 @@ bot.on("message", async (msg) => {
                             issueofEntries += 1;
                             await handleIssueRecords(amountReceived, fixedRate);
                             issueRecords = await issueSendRecordsToUser(issueRecordsArr);
+                            issueTodayTransaction.push(issueRecordsArr);
                             console.log("查看格式化样式", issueRecordsArr);
                             await sendPymenTemplate(chatId,
                                 dailyTotalAmount,
@@ -202,7 +207,10 @@ bot.on("message", async (msg) => {
                             0,
                             0,
                             0,
+                            0,
                             0);
+                        clearArray(incomingRecords);
+                        clearArray(issueRecordsArr);
                         return;
                     } else {
                         let s = Number(dailyTotalAmount);
@@ -234,7 +242,9 @@ bot.on("message", async (msg) => {
                         unissuedRmb = (parseFloat(unissued * fixedRate)).toFixed(2);
 
                         // numberofEntries += 1;
+                        issueRecords = await issueSendRecordsToUser(issueRecordsArr);
                         billingStyle = await sendRecordsToUser(incomingRecords);
+                        todayTransaction.push(incomingRecords);
                         console.log("查看格式化样式", billingStyle);
                         await sendPymenTemplate(chatId,
                             dailyTotalAmount,
@@ -287,6 +297,8 @@ bot.on("message", async (msg) => {
                             numberofEntries += 1;
                             await handleIncomingRecord(amountReceived, fixedRate);
                             billingStyle = await sendRecordsToUser(incomingRecords);
+                            //将今日交易数据放入缓存
+                            todayTransaction.push(incomingRecords);
                             console.log("查看格式化样式", billingStyle);
                             await sendPymenTemplate(chatId,
                                 dailyTotalAmount,
@@ -316,11 +328,56 @@ bot.on("message", async (msg) => {
                             reply_to_message_id: messageId
                         });
 
-                        //放入缓存
-                        messages.push(result);
-                        if (messages.length > 10) {
-                            messages.shift();
+                        const regex = /^\+?(\d+)(\/\d+)?$/;
+                        const numberMatch = messageText.match(regex);
+                        if (numberMatch) {
+                            let num = Number(numberMatch[1]);
+                            const amountReceived = parseFloat(num.toFixed(2));
+                            let s = Number(amountReceived);
+                            if (fixedRate !== null) {
+
+                                if (fixedRate === 0) {
+                                    const response = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=usd');
+                                    fixedRate = response.data.tether.usd.toFixed(2);
+                                    console.log("官网实时固定汇率：>>>>>>>>>>>>>>>>" + fixedRate)
+                                }
+
+                                dailyTotalAmount = (parseFloat(s) + Number(dailyTotalAmount)).toFixed(2);
+
+                                showldBeIssued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
+
+                                showldBeIssuedRmb = (dailyTotalAmount / parseFloat(fixedRate) * parseFloat(fixedRate)).toFixed(2);
+
+                                //已下发金额 = 入款总金额
+                                issued = (parseFloat(issued + dailyTotalAmount)).toFixed(2);
+
+                                issuedRmb = (parseFloat(issued + dailyTotalAmount) * fixedRate).toFixed(2);
+
+                                //未下发金额 = 入款总金额 - 已下发金额
+                                unissued = (parseFloat(dailyTotalAmount) - parseFloat(issued)).toFixed(2);
+
+                                unissuedRmb = (parseFloat(dailyTotalAmount - issued) * fixedRate).toFixed(2);
+
+                                numberofEntries += 1;
+                                await handleIncomingRecord(amountReceived, fixedRate);
+                                billingStyle = await sendRecordsToUser(incomingRecords);
+                                todayTransaction.push(incomingRecords);
+                                console.log("查看格式化样式", billingStyle);
+                                await sendPymenTemplate(chatId,
+                                    dailyTotalAmount,
+                                    showldBeIssued,
+                                    issued,
+                                    unissued,
+                                    numberofEntries,
+                                    billingStyle,
+                                    issueRecords,
+                                    issueofEntries);
+                            }
+                            return;
+                        } else {
+                            bot.sendMessage(chatId, "请先设置汇率!")
                         }
+
                         return;
                     } else {
                         bot.sendMessage(chatId, "请输入正确的数据格式")
@@ -339,11 +396,54 @@ bot.on("message", async (msg) => {
                             reply_to_message_id: messageId
                         });
 
-                        //放入缓存
-                        messages.push(result);
-                        if (messages.length > 10) {
-                            messages.shift();
-                        }
+                        // const regex = /^-?\d+\/\d+$/;
+                        // const numberMatch = messageText.match(regex);
+                        // if (numberMatch) {
+                        //     let num = Number(numberMatch[1]);
+                        //     const amountReceived = parseFloat(num.toFixed(2));
+                        //     let s = Number(amountReceived);
+                        //     if (fixedRate !== null) {
+
+                        //         if (fixedRate === 0) {
+                        //             const response = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=usd');
+                        //             fixedRate = response.data.tether.usd.toFixed(2);
+                        //             console.log("官网实时固定汇率：>>>>>>>>>>>>>>>>" + fixedRate)
+                        //         }
+
+                        //         dailyTotalAmount = (parseFloat(s) + Number(dailyTotalAmount)).toFixed(2);
+
+                        //         showldBeIssued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
+
+                        //         showldBeIssuedRmb = (dailyTotalAmount / parseFloat(fixedRate) * parseFloat(fixedRate)).toFixed(2);
+
+                        //         //已下发金额 = 入款总金额
+                        //         issued = (parseFloat(issued + dailyTotalAmount)).toFixed(2);
+
+                        //         issuedRmb = (parseFloat(issued + dailyTotalAmount) * fixedRate).toFixed(2);
+
+                        //         //未下发金额 = 入款总金额 - 已下发金额
+                        //         unissued = (parseFloat(dailyTotalAmount) - parseFloat(issued)).toFixed(2);
+
+                        //         unissuedRmb = (parseFloat(dailyTotalAmount - issued) * fixedRate).toFixed(2);
+
+                        //         numberofEntries += 1;
+                        //         await handleIncomingRecord(amountReceived, fixedRate);
+                        //         billingStyle = await sendRecordsToUser(incomingRecords);
+                        //         console.log("查看格式化样式", billingStyle);
+                        //         await sendPymenTemplate(chatId,
+                        //             dailyTotalAmount,
+                        //             showldBeIssued,
+                        //             issued,
+                        //             unissued,
+                        //             numberofEntries,
+                        //             billingStyle,
+                        //             issueRecords,
+                        //             issueofEntries);
+                        //     }
+                        //     return;
+                        // } else {
+                        //     bot.sendMessage(chatId, "请先设置汇率!")
+                        // }
                         return;
                     } else {
                         bot.sendMessage(chatId, "请输入正确的数据格式")
@@ -445,7 +545,6 @@ bot.on("message", async (msg) => {
 
                             unissuedRmb = (parseFloat(unissued * fixedRate)).toFixed(2);
 
-                            numberofEntries += 1;
                             billingStyle = await sendRecordsToUser(incomingRecords);
                             console.log("查看格式化样式", billingStyle);
                             await deleteBillTemplate(chatId,
@@ -457,7 +556,12 @@ bot.on("message", async (msg) => {
                                 0,
                                 0,
                                 0,
+                                0,
                                 0);
+                            todayTransaction.shift(incomingRecords);
+                            issueTodayTransaction.shift(issueRecordsArr);
+                            clearArray(incomingRecords);
+                            clearArray(issueRecordsArr);
                             bot.sendMessage(chatId, "今日账单清理完成", {
                                 reply_to_message_id: originalMessageId
 
@@ -533,6 +637,7 @@ function deleteBillTemplate(chatId,
     issued,
     unissued,
     numberofEntries,
+    issueofEntries,
     billingStyle,
     showldBeIssuedRmb,
     issuedRmb,
@@ -549,6 +654,7 @@ function deleteBillTemplate(chatId,
     const message = `<a href = "https://t.me/@Guik88">518</a>
     <b>入款(${numberofEntries}笔: )</b>
     ${billingStyle}
+    <b>入款(${issueofEntries}笔: )</b>
     <b>入款总金额：</b>${dailyTotalAmount}
     <b>费率：</b>${rate}
     <b>固定汇率：</b>${fixedRate}
@@ -721,5 +827,11 @@ async function deleteChatBot() {
         boostId: boost_id,
         remove_date: remove_date,
         source: source
+    }
+}
+
+function clearArray(arr) {
+    while (arr.length > 0) {
+        arr.shift();
     }
 }

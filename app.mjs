@@ -187,9 +187,9 @@ bot.on("message", async (msg) => {
                     const isAdmin = await checkifUserIsAdmin(bot, msg);
                     if (isAdmin === 1) {
                         try {
-                            // await handleMessage(bot, msg);
+                            await handleMessage(bot, msg);
                             // 获取所有交易对信息
-                            await getMarketData();
+                            // await getMarketData();
                         } catch (error) {
                             await bot.sendMessage(chatId, '获取数据失败，请稍后再试');
                         }
@@ -245,19 +245,21 @@ bot.on("message", async (msg) => {
 
                         unissuedRmb = (parseFloat(unissued * fixedRate)).toFixed(2);
 
-                        // // numberofEntries += 1;
-                        // issueRecords = await issueSendRecordsToUser(issueRecordsArr);
-                        // billingStyle = await sendRecordsToUser(incomingRecords);
-                        //从缓存获取
-                        // const issueRecords = myCache.get(isueCacheKey);
-                        // const billingStyle = myCache.get(inComingRecordKey);
+                        numberofEntries += 1;
+
+                        issueofEntries += 1;
+                        await handleIncomingRecord(amountReceived, fixedRate);
+                        await handleIssueRecords(amountReceived, fixedRate);
+                        // const issueRecordsArr = myCache.get(inComingRecordKey);
+                        billingStyle = await sendRecordsToUser(incomingRecords);
+                        issueRecords = await issueSendRecordsToUser(issueRecordsArr);
                         console.log("查看格式化样式", billingStyle);
                         await sendPymenTemplate(chatId,
                             dailyTotalAmount,
                             showldBeIssued,
                             issued,
                             unissued,
-                            0,
+                            numberofEntries,
                             billingStyle,
                             issueRecords,
                             issueofEntries);
@@ -303,8 +305,8 @@ bot.on("message", async (msg) => {
                             numberofEntries += 1;
 
                             await handleIncomingRecord(amountReceived, fixedRate);
-                            const issueRecordsArr = myCache.get(inComingRecordKey);
-                            billingStyle = await sendRecordsToUser(issueRecordsArr);
+                            // const issueRecordsArr = myCache.get(inComingRecordKey);
+                            billingStyle = await sendRecordsToUser(incomingRecords);
                             await sendPymenTemplate(chatId,
                                 dailyTotalAmount,
                                 showldBeIssued,
@@ -969,6 +971,37 @@ async function getMarketData() {
         console.log('Top 10 Real-Time Tickers:');
         top10Tickers.forEach((ticker, index) => {
             console.log(`${index + 1}. Symbol: ${ticker.instId}, Last Price: ${ticker.last}`);
+        });
+    } catch (error) {
+        console.error('Error fetching market data:', error.message);
+    }
+}
+
+// 获取实时交易汇率数据的函数
+async function getTop10Tickers() {
+    try {
+        // 请求实时汇率数据
+        const response = await axios.get(`${BASE_URL}tickers`);
+
+        // 从响应中提取数据
+        const tickers = response.data.data;
+
+        // 如果 tickers 数据为空，返回空结果
+        if (!tickers || tickers.length === 0) {
+            console.log('No ticker data available');
+            return;
+        }
+
+        // 将数据按最新价格（last）降序排序
+        tickers.sort((a, b) => parseFloat(b.last) - parseFloat(a.last));
+
+        // 提取前 10 个交易对
+        const top10Tickers = tickers.slice(0, 10);
+
+        // 输出结果
+        console.log('Top 10 Real-Time Tickers:');
+        top10Tickers.forEach((ticker, index) => {
+            console.log(`${index + 1}. Symbol: ${ticker.instId}, Last Price: ${ticker.last}, Change: ${ticker.change}`);
         });
     } catch (error) {
         console.error('Error fetching market data:', error.message);

@@ -245,7 +245,8 @@ bot.on("message", async (msg) => {
                 }
 
 
-                if (messageText.startsWith("+")) {
+
+                if (messageText.startsWith("+") && !checkForSpecialChars(messageText)) {
                     const numberMatch = messageText.match(/(\d+(\.\d{1,2})?)/);
                     if (numberMatch) {
                         let num = Number(numberMatch[0]);
@@ -293,66 +294,114 @@ bot.on("message", async (msg) => {
                                 billingStyle,
                                 issueRecords,
                                 issueofEntries);
-
+                            return;
                         } else {
                             bot.sendMessage(chatId, "请先设置汇率!")
                         }
                     }
                 }
+
+                //进行数字输入计算 
+                if (messageText.startsWith("+") && !messageText.startsWith("设置")) {
+                    const regex = /(-?\d+)(\/\d+(\.\d+)?)$/; // 修改捕获组
+                    const match = messageText.match(regex);
+                    if (match) {
+                        const amount = parseFloat(match[1]);
+                        const price = parseFloat(match[2].slice(1));
+                        const result = parseFloat(amount / price).toFixed(2);
+                        await bot.sendMessage(chatId, result, {
+                            reply_to_message_id: messageId
+                        });
+
+                        //放入缓存
+                        messages.push(result);
+                        if (messages.length > 10) {
+                            messages.shift();
+                        }
+                        return;
+                    } else {
+                        bot.sendMessage(chatId, "请输入正确的数据格式")
+                        return;
+                    }
+                }
+                //进行数字输入计算 
+                if (messageText.startsWith("-") && !messageText.startsWith("设置")) {
+                    const regex = /(-?\d+)(\/\d+(\.\d+)?)$/; // 修改捕获组
+                    const match = messageText.match(regex);
+                    if (match) {
+                        const amount = parseFloat(match[1]);
+                        const price = parseFloat(match[2].slice(1));
+                        const result = parseFloat(amount / price).toFixed(2);
+                        await bot.sendMessage(chatId, result, {
+                            reply_to_message_id: messageId
+                        });
+
+                        //放入缓存
+                        messages.push(result);
+                        if (messages.length > 10) {
+                            messages.shift();
+                        }
+                        return;
+                    } else {
+                        bot.sendMessage(chatId, "请输入正确的数据格式")
+                        return;
+                    }
+                }
+
 
                 //如果机器人接收到的指令是 - 做减法
-                if (messageText.startsWith("-")) {
-                    const numberMatch = messageText.match(/(\d+(\.\d{1,2})?)/);
-                    if (numberMatch) {
-                        let num = Number(numberMatch[0]);
-                        const amountReceived = parseFloat(num.toFixed(2));
-                        let s = Number(amountReceived);
-                        if (fixedRate !== null) {
+                // if (messageText.startsWith("-")) {
+                //     const numberMatch = messageText.match(/(\d+(\.\d{1,2})?)/);
+                //     if (numberMatch) {
+                //         let num = Number(numberMatch[0]);
+                //         const amountReceived = parseFloat(num.toFixed(2));
+                //         let s = Number(amountReceived);
+                //         if (fixedRate !== null) {
 
-                            // if (fixedRate === 0.00) {
-                            //     console.log("除数不能为零");
-                            //     bot.sendMessage(chatId, "汇率为零，请先设置汇率!");
-                            //     return;
-                            // }
+                //             // if (fixedRate === 0.00) {
+                //             //     console.log("除数不能为零");
+                //             //     bot.sendMessage(chatId, "汇率为零，请先设置汇率!");
+                //             //     return;
+                //             // }
 
-                            if (fixedRate === 0) {
-                                const response = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=usd');
-                                fixedRate = response.data.tether.usd.toFixed(2);
-                            }
+                //             if (fixedRate === 0) {
+                //                 const response = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=usd');
+                //                 fixedRate = response.data.tether.usd.toFixed(2);
+                //             }
 
-                            dailyTotalAmount = (parseFloat(s) + Number(dailyTotalAmount)).toFixed(2);
+                //             dailyTotalAmount = (parseFloat(s) + Number(dailyTotalAmount)).toFixed(2);
 
-                            showldBeIssued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
+                //             showldBeIssued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
 
-                            showldBeIssuedRmb = (dailyTotalAmount / parseFloat(fixedRate) * parseFloat(fixedRate)).toFixed(2);
+                //             showldBeIssuedRmb = (dailyTotalAmount / parseFloat(fixedRate) * parseFloat(fixedRate)).toFixed(2);
 
-                            //已下发金额 = 入款总金额
-                            issued = (parseFloat(issued + dailyTotalAmount)).toFixed(2);
+                //             //已下发金额 = 入款总金额
+                //             issued = (parseFloat(issued + dailyTotalAmount)).toFixed(2);
 
-                            issuedRmb = (parseFloat(issued + dailyTotalAmount) * fixedRate).toFixed(2);
+                //             issuedRmb = (parseFloat(issued + dailyTotalAmount) * fixedRate).toFixed(2);
 
-                            //未下发金额 = 入款总金额 - 已下发金额
-                            unissued = (parseFloat(dailyTotalAmount) - parseFloat(issued)).toFixed(2);
+                //             //未下发金额 = 入款总金额 - 已下发金额
+                //             unissued = (parseFloat(dailyTotalAmount) - parseFloat(issued)).toFixed(2);
 
-                            unissuedRmb = (parseFloat(dailyTotalAmount - issued) * fixedRate).toFixed(2);
+                //             unissuedRmb = (parseFloat(dailyTotalAmount - issued) * fixedRate).toFixed(2);
 
-                            numberofEntries += 1;
-                            await handleIncomingRecord(amountReceived, fixedRate);
-                            billingStyle = await sendRecordsToUser(incomingRecords);
-                            console.log("查看格式化样式", billingStyle);
-                            await sendPymenTemplate(chatId,
-                                dailyTotalAmount,
-                                showldBeIssued,
-                                issued,
-                                unissued,
-                                numberofEntries,
-                                billingStyle);
+                //             numberofEntries += 1;
+                //             await handleIncomingRecord(amountReceived, fixedRate);
+                //             billingStyle = await sendRecordsToUser(incomingRecords);
+                //             console.log("查看格式化样式", billingStyle);
+                //             await sendPymenTemplate(chatId,
+                //                 dailyTotalAmount,
+                //                 showldBeIssued,
+                //                 issued,
+                //                 unissued,
+                //                 numberofEntries,
+                //                 billingStyle);
 
-                        } else {
-                            bot.sendMessage(chatId, "请先设置汇率!")
-                        }
-                    }
-                }
+                //         } else {
+                //             bot.sendMessage(chatId, "请先设置汇率!")
+                //         }
+                //     }
+                // }
 
                 // //删除聊天机器人
                 // try {
@@ -657,6 +706,11 @@ async function getUsdtPrice() {
     } catch (error) {
         console.error('获取USDT价格失败:', error);
     }
+}
+
+function checkForSpecialChars(messageText) {
+    const regex = /[\/\*]/; // 匹配 / 或 *
+    return regex.test(messageText);
 }
 
 

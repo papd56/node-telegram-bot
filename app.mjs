@@ -324,9 +324,9 @@ bot.on("message", async (msg) => {
                                 return;
                             } else {
                                 bot.sendMessage(chatId, "请先设置汇率!")
-                                return;
                             }
                         }
+                        return;
                     }
                 }
 
@@ -397,7 +397,19 @@ bot.on("message", async (msg) => {
                         await bot.sendMessage(chatId, result, {
                             reply_to_message_id: messageId
                         });
-
+                        return;
+                    }
+                    const regexs = /^[-+]?(\d+(\.\d+)?|\.\d+)([-+*\/][-]?(\d+(\.\d+)?|\.\d+))*$/;
+                    if (messageText.match(regexs)) {
+                        if (messageText.match(regexs)) {
+                            const amount = parseFloat(messageText.match(regexs)[1]);
+                            const price = parseFloat(messageText.match(regexs)[4]);
+                            const result = parseFloat(amount * price).toFixed(2);
+                            await bot.sendMessage(chatId, result, {
+                                reply_to_message_id: messageId
+                            });
+                            return;
+                        }
                         const regex = /^\+?(\d+)(\/\d+)?$/;
                         const numberMatch = messageText.match(regex);
                         if (numberMatch) {
@@ -464,6 +476,19 @@ bot.on("message", async (msg) => {
                         await bot.sendMessage(chatId, result, {
                             reply_to_message_id: messageId
                         });
+                        return;
+                    }
+                    const regexs = /^[-+]?(\d+(\.\d+)?|\.\d+)([-+*\/][-]?(\d+(\.\d+)?|\.\d+))*$/;
+                    if (messageText.match(regexs)) {
+                        if (messageText.match(regexs)) {
+                            const amount = parseFloat(messageText.match(regexs)[1]);
+                            const price = parseFloat(messageText.match(regexs)[4]);
+                            const result = parseFloat("-" + amount * price).toFixed(2);
+                            await bot.sendMessage(chatId, result, {
+                                reply_to_message_id: messageId
+                            });
+                            return;
+                        }
 
                         // const regex = /^-?\d+\/\d+$/;
                         // const numberMatch = messageText.match(regex);

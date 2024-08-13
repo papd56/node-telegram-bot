@@ -3,7 +3,7 @@ import checkifUserIsAdmin from "./adminCheck.mjs"
 import { DateTime } from "luxon";
 import axios from 'axios';
 import NodeCache from 'node-cache';
-import mysql from 'mysql';
+import mysql from 'mysql2';
 import express from 'express';
 const app = express();
 const token = "7237081474:AAGsSnjPvvr1RLOgdrQjA9XNl-JrV0bQ-5o";

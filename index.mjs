@@ -5,14 +5,15 @@ import checkifUserIsAdmin from './adminCheck.mjs';
 
 const bot = new TelegramBot(token, {
   polling: true,
+  request: {
+    agentOptions: {
+      keepAlive: true,
+      family: 4
+    }
+  }
 });
 
 bot.on('message', async (msg) => {
-  if (!msg || !msg.chat) {
-    console.log('无效的消息结构:', msg);
-    return false;
-  }
-  console.log('有效的消息结构:', msg);
   const chatId = msg.chat.id;
   const userId = msg.from.id;
   const messageText = msg.text;
@@ -149,8 +150,7 @@ bot.on('message', async (msg) => {
       await bot.sendMessage(chatId, '这个命令只能在群组中使用。');
     }
   } catch (error) {
-    console.log('获取信息出错');
-    throw error;
+    console.error(error);
+    return false;
   }
 });
-

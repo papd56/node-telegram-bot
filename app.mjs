@@ -3,9 +3,21 @@ import checkifUserIsAdmin from "./adminCheck.mjs"
 import { DateTime } from "luxon";
 import axios from 'axios';
 import NodeCache from 'node-cache';
+import mysql from 'mysql';
+import express from 'express';
+const app = express();
 const token = "7237081474:AAGsSnjPvvr1RLOgdrQjA9XNl-JrV0bQ-5o";
 const bot = new TelegramBot(token, {
     polling: true,
+});
+
+//初始化一个mysql数据库实例
+const connection = mysql.createConnection({
+    host: '47.76.223.250',
+    port: '3306',
+    user: 'root',
+    password: 'Qwer1234..',
+    database: 'bot'
 });
 
 // 创建一个缓存实例，设置缓存过期时间为 10 秒
@@ -158,7 +170,7 @@ bot.on("message", async (msg) => {
                             issuedRmb = (dailyTotalAmount / parseFloat(fixedRate) * fixedRate).toFixed(2);
 
                             //未下发金额 = 入款总金额 - 已下发金额
-                            unissued = (parseFloat(dailyTotalAmount) - parseFloat(issued)).toFixed(2);
+                            unissued = (parseFloat(dailyTotalAmount - issued) / fixedRate).toFixed(2);
 
                             unissuedRmb = (parseFloat(dailyTotalAmount - issued) * fixedRate).toFixed(2);
 
@@ -198,24 +210,66 @@ bot.on("message", async (msg) => {
                     }
                 }
 
-                if (messageText === "+0") {
-                    if (previousMessage.text === "删除账单") {
-                        numberofEntries = 0;
-                        issueofEntries = 0;
-                        await deleteBillTemplate(chatId,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0);
-                        return;
-                    } else {
+                if (messageText === "显示操作人") {
+                    const isAdmin = await checkifUserIsAdmin(bot, msg);
+                    if (isAdmin === 1) {
+                        try {
+                            app.get('/group/:groupId/admins', async (req, res) => {
+                                const groupId = req.params.groupId;
+                                try {
+                                    const group = await Group.findByPk(groupId, {
+                                        include: [{
+                                            model: User,
+                                            through: {
+                                                where: {
+                                                    permission: 'admin' // 这里假设 'admin' 权限表示管理机器人
+                                                }
+                                            }
+                                        }]
+                                    });
 
+                                    if (!group) {
+                                        return res.status(404).json({ message: '群组不存在' });
+                                    }
+
+                                    bot.sendMessage(chatId, group.Users, {
+                                        reply_to_message_id: messageId,
+
+                                    });
+                                } catch (error) {
+                                    console.error(error);
+                                    res.status(500).json({ message: '服务器错误' });
+                                }
+                            });
+
+                        } catch (error) {
+                            await bot.sendMessage(chatId, '获取数据失败，请稍后再试');
+                        }
+                    } else {
+                        // 非管理员用户，返回提示信息
+                        await bot.sendMessage(chatId, '您没有权限执行此操作');
+                    }
+                }
+
+                if (messageText === "+0") {
+                    if (previousMessage) {
+                        if (previousMessage.text === "删除账单") {
+                            numberofEntries = 0;
+                            issueofEntries = 0;
+                            await deleteBillTemplate(chatId,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0);
+                            return;
+                        }
+                    } else {
                         const numberMatch = messageText.match(/(\d+(\.\d{1,2})?)/);
                         if (numberMatch) {
                             let num = Number(numberMatch[0]);
@@ -246,7 +300,7 @@ bot.on("message", async (msg) => {
                                 issuedRmb = (parseFloat(issued + dailyTotalAmount) * fixedRate).toFixed(2);
 
                                 //未下发金额 = 入款总金额 - 已下发金额
-                                unissued = (parseFloat(dailyTotalAmount) - parseFloat(issued)).toFixed(2);
+                                unissued = (parseFloat(dailyTotalAmount - issued) / fixedRate).toFixed(2);
 
                                 unissuedRmb = (parseFloat(dailyTotalAmount - issued) * fixedRate).toFixed(2);
 
@@ -270,10 +324,10 @@ bot.on("message", async (msg) => {
                                 return;
                             } else {
                                 bot.sendMessage(chatId, "请先设置汇率!")
+                                return;
                             }
                         }
                     }
-                    return;
                 }
 
                 if (messageText.startsWith("+") && !checkForSpecialChars(messageText)) {
@@ -307,7 +361,7 @@ bot.on("message", async (msg) => {
                             issuedRmb = (parseFloat(issued + dailyTotalAmount) * fixedRate).toFixed(2);
 
                             //未下发金额 = 入款总金额 - 已下发金额
-                            unissued = (parseFloat(dailyTotalAmount) - parseFloat(issued)).toFixed(2);
+                            unissued = (parseFloat(dailyTotalAmount - issued) / fixedRate).toFixed(2);
 
                             unissuedRmb = (parseFloat(dailyTotalAmount - issued) * fixedRate).toFixed(2);
 
@@ -370,7 +424,7 @@ bot.on("message", async (msg) => {
                                 issuedRmb = (parseFloat(issued + dailyTotalAmount) * fixedRate).toFixed(2);
 
                                 //未下发金额 = 入款总金额 - 已下发金额
-                                unissued = (parseFloat(dailyTotalAmount) - parseFloat(issued)).toFixed(2);
+                                unissued = (parseFloat(dailyTotalAmount - issued) / fixedRate).toFixed(2);
 
                                 unissuedRmb = (parseFloat(dailyTotalAmount - issued) * fixedRate).toFixed(2);
 
@@ -556,7 +610,7 @@ bot.on("message", async (msg) => {
                             issuedRmb = (parseFloat(issued + dailyTotalAmount) * fixedRate).toFixed(2);
 
                             //未下发金额 = 入款总金额 - 已下发金额
-                            unissued = (parseFloat(dailyTotalAmount) - parseFloat(issued)).toFixed(2);
+                            unissued = (parseFloat(dailyTotalAmount - issued) / fixedRate).toFixed(2);
 
                             unissuedRmb = (parseFloat(unissued * fixedRate)).toFixed(2);
 
@@ -602,9 +656,8 @@ bot.on("message", async (msg) => {
                     issued = (parseFloat(issued + dailyTotalAmount)).toFixed(2);
 
                     issuedRmb = (parseFloat(issued + dailyTotalAmount) * fixedRate).toFixed(2);
-
                     //未下发金额 = 入款总金额 - 已下发金额
-                    unissued = (parseFloat(dailyTotalAmount) - parseFloat(issued)).toFixed(2);
+                    unissued = (parseFloat(dailyTotalAmount - issued) / fixedRate).toFixed(2);
 
                     unissuedRmb = (parseFloat(unissued * fixedRate)).toFixed(2);
 
@@ -631,48 +684,6 @@ bot.on("message", async (msg) => {
         throw error;
     }
 });
-
-
-//删除账单模版
-function deleteBill(chatId,
-    dailyTotalAmount,
-    showldBeIssued,
-    issued,
-    unissued,
-    numberofEntries,
-    issueofEntries,
-    billingStyle,
-    showldBeIssuedRmb,
-    issuedRmb,
-    unissuedRmb) {
-    const keyboard = {
-        inline_keyboard: [
-            [
-                { text: "公群导航", url: "https://t.me/dbcksq" },
-                { text: "供求信息", url: "https://t.me/s/TelePlanting" },
-            ],
-        ],
-    };
-
-    const message = `<a href = "https://t.me/@Guik88">518</a>
-    <b>入款(${numberofEntries}笔: )</b>
-    ${billingStyle}
-    <b>入款(${issueofEntries}笔: )</b>
-    <b>入款总金额：</b>${dailyTotalAmount}
-    <b>费率：</b>${rate}
-    <b>固定汇率：</b>${fixedRate}
-    <b>应下发：</b>${showldBeIssued}(USDT)${showldBeIssuedRmb}(RMB)
-    <b>已下发：</b>${issued}(USDT)${issuedRmb}(RMB)
-    <b>未下发：</b>${unissued}(USDT)${unissuedRmb}(RMB)
-    `;
-    bot.sendMessage(chatId, message, {
-        parse_mode: "HTML",
-        reply_markup: keyboard,
-        disable_web_page_preview: true,
-    });
-
-}
-
 
 //+0账单模版
 function deleteBillTemplate(chatId,

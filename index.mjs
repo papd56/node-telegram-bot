@@ -1,4 +1,37 @@
 import TelegramBot from 'node-telegram-bot-api';
+import Redis from 'ioredis';
+import http from 'http';
+
+// redis缓存
+const cache = new Redis({
+  host: '47.76.223.250',
+  port: 6379
+});
+
+function fetchData(path) {
+  return new Promise((resolve, reject) => {
+    let options = {
+      hostname: 'localhost',
+      port: 8897,
+      path: path,
+      method: 'POST'
+    };
+    let req = http.request(options, (res) => {});
+    req.on('error', (error) => {
+      reject(error);
+    });
+    req.end();
+  });
+}
+async function main() {
+  try {
+    const userList = await fetchData('/bot/user/userList');
+    const promoteList = await fetchData('/bot/promote/promoteList');
+  } catch (error) {
+    console.error(error);
+  }
+}
+main();
 
 const token = '7269675720:AAEEkkXm30WMsjR4ZWysHDPQTQeym0aUX-Y';
 import checkifUserIsAdmin from './adminCheck.mjs';
@@ -11,6 +44,15 @@ const bot = new TelegramBot(token, {
       family: 4
     }
   }
+});
+
+// Listen for new chat members
+bot.on('new_chat_members', (msg) => {
+  console.log(msg);
+  const newMembers = msg.new_chat_members;
+  newMembers.forEach(member => {
+    bot.sendMessage(chatId, cache.get("promote:群组欢迎语").content.replace("X",member.first_name));
+  });
 });
 
 bot.on('message', async (msg) => {
@@ -36,22 +78,22 @@ bot.on('message', async (msg) => {
     // 检查消息是否来自群组
     if (msg.chat.type === 'group' || msg.chat.type === 'supergroup') {
       if (messageText === '验群') {
-        await bot.sendMessage(chatId, '本群是真群！请注意看我的用户名是 @Guik88 (群管拼音)，谨防假机器人。私聊我输入词语可以搜索真公群,如：卡商、白资、承兑等。请找有头衔的人在群内交易，切勿相信主动私聊你的，都是骗子。非群内交易没有任何保障.', {
+        await bot.sendMessage(chatId, cache.get("promote:验群").content, {
           reply_to_message_id: messageId,
         });
       }
       let isAdmin = await checkifUserIsAdmin(bot, msg);
-      if (messageText && isAdmin === 1) {
+      if (messageText && (isAdmin === 1 || cache.has("admin:"+userId))) {
         if (messageText.startsWith('修改公群名')) {
           // 更改群组名称
           await bot.setChatTitle(chatId, messageText.substring(5));
-          await bot.sendMessage(chatId, '修改成功', { reply_to_message_id: messageId });
+          await bot.sendMessage(chatId, cache.get("promote:修改公群名").content, { reply_to_message_id: messageId });
         }
 
         if (messageText === '真公群') {
           //真公群  发送消息 发送图片
           await bot.setChatPermissions(chatId, newPermissions);
-          await bot.sendMessage(chatId, '该公群为真公群！', {
+          await bot.sendMessage(chatId, cache.get("promote:真公群").content, {
             reply_to_message_id: messageId,
           });
         }
@@ -59,7 +101,7 @@ bot.on('message', async (msg) => {
         if (messageText === '上课') {
           //群已开  发送消息 发送图片
           await bot.setChatPermissions(chatId, newPermissions);
-          await bot.sendMessage(chatId, '群已开，群内可以正常营业', {
+          await bot.sendMessage(chatId, cache.get("promote:上课").content, {
             reply_to_message_id: messageId,
           });
         }
@@ -67,7 +109,7 @@ bot.on('message', async (msg) => {
         if (messageText === '下课') {
           //设置全员禁言
           await bot.setChatPermissions(chatId, { can_send_messages: false });
-          await bot.sendMessage(chatId, '本公群今日已下课，如需交易，请在该群恢复营业后在群内交易！ 切勿私下交易！！！如有业务咨询请联系群老板/业务员如有纠纷请联系纠纷专员 @Guik88', {
+          await bot.sendMessage(chatId, cache.get("promote:下课").content, {
             reply_to_message_id: messageId,
           });
         }
@@ -88,10 +130,19 @@ bot.on('message', async (msg) => {
           }
           // 发送置顶提醒
           if (messageText.startsWith('设置群老板 @')) {
-            await bot.sendMessage(chatId, '设置群老板成功', { reply_to_message_id: messageId });
+            await bot.sendMessage(chatId, cache.get("promote:设置群老板").content, { reply_to_message_id: messageId });
           } else {
-            await bot.sendMessage(chatId, '设置群业务员成功', { reply_to_message_id: messageId });
+            await bot.sendMessage(chatId, cache.get("promote:设置群业务员").content, { reply_to_message_id: messageId });
           }
+        }
+
+        if (messageText.startsWith('踢出 @') || messageText.startsWith('踢出 @')) {
+          const username = msg.text.split('@')[1];
+          await bot.banChatMember(chatId, cache.get("user:"+username).userId, {});
+          // 发送踢出提醒
+          await bot.sendMessage(chatId, cache.get("promote:踢出").content, {
+            reply_to_message_id: messageId
+          });
         }
 
         if (replyMessage) {
@@ -105,9 +156,9 @@ bot.on('message', async (msg) => {
             }
             // 发送置顶提醒
             if (messageText === '设置群老板') {
-              await bot.sendMessage(chatId, '设置群老板成功', { reply_to_message_id: messageId });
+              await bot.sendMessage(chatId, cache.get("promote:设置群老板").content, { reply_to_message_id: messageId });
             } else {
-              await bot.sendMessage(chatId, '设置群业务员成功', { reply_to_message_id: messageId });
+              await bot.sendMessage(chatId, cache.get("promote:设置群业务员").content, { reply_to_message_id: messageId });
             }
           }
 
@@ -120,7 +171,7 @@ bot.on('message', async (msg) => {
               can_pin_messages: true,       // 置顶消息
               can_promote_members: true     // 添加管理员
             });
-            await bot.sendMessage(chatId, '添加成功', {
+            await bot.sendMessage(chatId, cache.get("promote:开启权限").content, {
               reply_to_message_id: messageId,
             });
           }
@@ -128,7 +179,7 @@ bot.on('message', async (msg) => {
           if (messageText === '置顶') {
             await bot.pinChatMessage(chatId, replyMessageId, {});
             // 发送置顶提醒
-            await bot.sendMessage(chatId, '置顶成功', {
+            await bot.sendMessage(chatId, cache.get("promote:置顶").content, {
               reply_to_message_id: messageId
             });
           }
@@ -138,13 +189,19 @@ bot.on('message', async (msg) => {
               message_id: replyMessageId
             });
             // 发送取消置顶提醒
-            await bot.sendMessage(chatId, '取消置顶成功', {
+            await bot.sendMessage(chatId, cache.get("promote:取消置顶").content, {
+              reply_to_message_id: messageId
+            });
+          }
+
+          if (messageText === '踢出') {
+            await bot.banChatMember(chatId, replyUserId, {});
+            // 发送踢出提醒
+            await bot.sendMessage(chatId, cache.get("promote:踢出").content, {
               reply_to_message_id: messageId
             });
           }
         }
-      } else if (isAdmin === 0) {
-        await bot.sendMessage(chatId, '只有管理员才能使用此命令。');
       }
     } else {
       await bot.sendMessage(chatId, '这个命令只能在群组中使用。');

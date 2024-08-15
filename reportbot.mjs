@@ -34,10 +34,13 @@ bot.on("message", async (msg) => {
             const messageContent = "报备模板中必须包含: " + "\n" + "交易方对接人：@hwdb" + "\n" + "交易金额：100u" + "\n" + "订单完成时间：1天";
             bot.sendMessage(chatId, messageContent, {
             });
+            bot.validateTradeInfo();
+            return;
         }
         if (validateTradeInfo(messageText)) {
             bot.sendMessage(chatId, "发送成功，请在公群内查看", {
             });
+            bot.telegram.sendMessage
         }
     } catch (error) {
         console.log("请求转发异常，报备失败！");
@@ -52,6 +55,15 @@ function sendPymenTemplate(chatId,
     transactionAmount,
     transactionParty,
     orderFinshTime) {
+    const keyboard = {
+        inline_keyboard: [
+            [
+                { text: "公群导航", url: "https://t.me/dbcksq" },
+                // { text: "供求信息", url: "https://t.me/s/TelePlanting" },
+                { text: "点击跳转完整账单", url: "https://acbot.top/?id=" + chatId },
+            ],
+        ],
+    };
 
     const message = `<a href = "https://t.me/@Guik88">报备</a>
     <b>交易方对接人:</b>${transactionParty}

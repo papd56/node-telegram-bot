@@ -6,12 +6,40 @@ import http from 'http';
 const cache = new Redis({
   host: '47.76.223.250',
   port: 6379,
-  retryStrategy: (times) => {
-    if (times > 10) {
-      return new Error('Retry limit reached');
+  db: 0,
+  retryStrategy: (options) => {
+    if (options.error && options.error.code === 'ECONNREFUSED') {
+      // Handle ECONNREFUSED differently
+      console.error('Redis connection refused');
+      return new Error('Redis connection refused');
     }
-    return Math.min(times * 50, 2000);
-  }
+
+    if (options.attempt > 10) {
+      // End reconnecting on a specific error and flush all commands with
+      // individual error
+      console.error('Redis connection failed after 10 attempts');
+      return new Error('Too many retry attempts');
+    }
+
+    if (options.total_retry_time > 1000 * 60 * 5) {
+      // End reconnecting after a specific timeout and flush all commands
+      // with individual error
+      console.error('Redis connection failed after 5 minutes');
+      return new Error('Retry time exhausted');
+    }
+
+    if (options.error.code === 'ECONNRESET' && options.attempt < 10) {
+      // End reconnecting on a specific error and flush all commands with
+      // individual error
+      console.error('Redis connection reset');
+      return new Error('Redis connection reset');
+    }
+
+    // reconnect after
+    return Math.min(options.attempt * 100, 3000);
+  },
+  connect_timeout: 1000, // 连接超时时间
+  idleTimeout: 60000
 });
 
 cache.on('error', (error) => {
@@ -69,6 +97,8 @@ async function sendMessage(chatId, messageId, messageText) {
   });
 }
 
+let botInfo = await bot.getMe();
+
 // Listen for new chat members
 bot.on('new_chat_members', async (msg) => {
   console.log('new_chat_members:' + JSON.stringify(msg));
@@ -80,7 +110,7 @@ bot.on('new_chat_members', async (msg) => {
     let users = [];
     for (let member of newMembers) {
       users.push({
-        botId: "6787012422",
+        botId: botInfo.id,
         userId : member.id,
         userName : member.username,
         userNickname : member.first_name
@@ -96,7 +126,7 @@ bot.on('message', async (msg) => {
   if (msg) {
     const chatId = msg.chat.id;
     const messageId = msg.message_id; //获取消息ID
-    if (msg.left_chat_member) {
+    if (msg.left_chat_member || msg.new_chat_member || msg.pinned_message) {
       bot.deleteMessage(chatId, messageId);
     }
     const userId = msg.from.id;

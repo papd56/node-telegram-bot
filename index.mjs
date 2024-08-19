@@ -144,6 +144,13 @@ bot.on('new_chat_members', async (msg) => {
   }
 });
 
+// 设置权限 (允许发送消息和图片)
+const newPermissions = {
+  can_send_messages: true,
+  can_send_photos: true,
+  // ...其他权限设置
+};
+
 bot.on('message', async (msg) => {
   if (msg) {
     const chatId = msg.chat.id;
@@ -163,12 +170,6 @@ bot.on('message', async (msg) => {
     if (msg.pinned_message) {
       await cache.set('pin:' + msg.pinned_message.message_id, msg.pinned_message);
     }
-    // 设置权限 (允许发送消息和图片)
-    const newPermissions = {
-      can_send_messages: true,
-      can_send_photos: true,
-      // ...其他权限设置
-    };
 
     try {
       // 检查消息是否来自群组

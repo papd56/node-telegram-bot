@@ -114,6 +114,14 @@ async function sendMessage(chatId, messageId, messageText) {
 bot.on('new_chat_members', async (msg) => {
   if (msg) {
     const chatId = msg.chat.id;
+    if (msg.new_chat_member.id === botInfo.id) {
+      let group = {
+        botId: botInfo.id,
+        groupId: chatId,
+        groupName: msg.chat.title
+      };
+      await fetchData('/bot/group/addGroup', JSON.stringify(group));
+    }
     const newMembers = msg.new_chat_members;
     // await fetchData('/bot/user/addUsers', newMembers);
     let value = await cache.get('promote:群组欢迎语');
@@ -155,7 +163,7 @@ bot.on('message', async (msg) => {
   if (msg) {
     const chatId = msg.chat.id;
     const messageId = msg.message_id; //获取消息ID
-    if (msg.left_chat_member || msg.new_chat_member) {
+    if (msg.left_chat_member && msg.left_chat_member.id !== botInfo.id || msg.new_chat_member && msg.new_chat_member.id !== botInfo.id) {
       await bot.deleteMessage(chatId, messageId);
     }
     const userId = msg.from.id;
@@ -177,8 +185,8 @@ bot.on('message', async (msg) => {
         if (messageText === '验群') {
           let time = await cache.get('time:' + messageText);
           if (time === null || Date.now() - time >= 300000) {
-            await cache.set('time:' + messageText, Date.now());
             await sendMessage(chatId, messageId, messageText);
+            await cache.set('time:' + messageText, Date.now());
           }
         }
         let isAdmin = await checkifUserIsAdmin(bot, msg);
@@ -202,10 +210,17 @@ bot.on('message', async (msg) => {
               await sendMessage(chatId, messageId, messageText);
             }
             if (admin) {
-              if (messageText.startsWith('修改公群名')) {
+              if (messageText.startsWith('修改公群群名')) {
+                let groupName = messageText.substring(6);
                 // 更改群组名称
-                await bot.setChatTitle(chatId, messageText.substring(5));
-                await sendMessage(chatId, messageId, '修改公群名');
+                await bot.setChatTitle(chatId, groupName);
+                await sendMessage(chatId, messageId, '修改公群群名');
+                let group = {
+                  botId: botInfo.id,
+                  groupId: chatId,
+                  groupName: groupName
+                };
+                await fetchData('/bot/group/editGroup', JSON.stringify(group));
               }
 
               if (messageText === '设置简介') {
@@ -215,7 +230,14 @@ bot.on('message', async (msg) => {
 
               if (messageText === '担保关闭') {
                 if (!msg.chat.title.includes('已退押')) {
-                  await bot.setChatTitle(chatId, msg.chat.title.split('已押')[0] + '已退押');
+                  let groupName = msg.chat.title.split('已押')[0] + '已退押';
+                  await bot.setChatTitle(chatId, groupName);
+                  let group = {
+                    botId: botInfo.id,
+                    groupId: chatId,
+                    groupName: groupName
+                  };
+                  await fetchData('/bot/group/editGroup', JSON.stringify(group));
                 }
                 await bot.setChatDescription(chatId, '-');
                 await bot.setChatDescription(chatId, '');
@@ -261,6 +283,7 @@ bot.on('message', async (msg) => {
                   reply_to_message_id: messageId,
                 });
                 await bot.sendMessage(chatId, value[1]);
+                await bot.pinChatMessage(chatId, messageId+2)
               }
 
               if (messageText === '显示公群群名') {

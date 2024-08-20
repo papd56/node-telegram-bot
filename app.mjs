@@ -406,7 +406,7 @@ bot.on("message", async (msg) => {
                     }
                 }
 
-                //进行数字输入计算 
+                //进行数字输入计算
                 if (messageText.startsWith("+") && !messageText.startsWith("设置")) {
                     const regex = /(-?\d+)(\/\d+(\.\d+)?)$/; // 修改捕获组
                     const match = messageText.match(regex);
@@ -485,7 +485,7 @@ bot.on("message", async (msg) => {
                         return;
                     }
                 }
-                //进行数字输入计算 
+                //进行数字输入计算
                 if (messageText.startsWith("-") && !messageText.startsWith("设置")) {
                     const regex = /(-?\d+)(\/\d+(\.\d+)?)$/; // 修改捕获组
                     const match = messageText.match(regex);
@@ -791,21 +791,21 @@ function sendPymenTemplate(chatId,
         ],
     };
 
-    const message = `<a href = "https://t.me/@Guik88">518</a>
-    <b>入款(${numberofEntries}笔:)</b>
+    const message = `[518](https://t.me/@Guik88)
+    入款(${numberofEntries}笔:)
     ${billingStyle.join('\n')}
-    <b>下发(${issueofEntries}笔:)</b>
+    下发(${issueofEntries}笔:)
     ${issueRecords.join('\n')}
-    <b>入款总金额：</b>${dailyTotalAmount}
-    <b>费率：</b>${rate}
-    <b>固定汇率：</b>${fixedRate}
-    <b>应下发：</b>${showldBeIssued}(USDT)
-    <b>已下发：</b>${issued}(USDT)
-    <b>未下发：</b>${unissued}(USDT)
+    入款总金额：${dailyTotalAmount}
+    费率：${rate}
+    固定汇率：${fixedRate}
+    应下发：${showldBeIssued}(USDT)
+    已下发：${issued}(USDT)
+    未下发：${unissued}(USDT)
     `;
 
     bot.sendMessage(chatId, message, {
-        parse_mode: "HTML",
+        parse_mode: "Markdown",
         reply_markup: keyboard,
         disable_web_page_preview: true,
     });
@@ -833,15 +833,15 @@ function sendPymenTemplateAddZero(chatId,
         ],
     };
 
-    const message = `<a href = "https://t.me/@Guik88">518</a>
-    <b>入款(${numberofEntries}笔:)</b>
-    <b>下发(${issueofEntries}笔:)</b>
-    <b>入款总金额：</b>${dailyTotalAmount}
-    <b>费率：</b>${rate}
-    <b>固定汇率：</b>${fixedRate}
-    <b>应下发：</b>${showldBeIssued}(USDT)
-    <b>已下发：</b>${issued}(USDT)
-    <b>未下发：</b>${unissued}(USDT)
+    const message = `[518](https://t.me/@Guik88)
+    入款(${numberofEntries}笔:)
+    下发(${issueofEntries}笔:)
+    入款总金额：${dailyTotalAmount}
+    费率：${rate}
+    固定汇率：${fixedRate}
+    应下发：${showldBeIssued}(USDT)
+    已下发：${issued}(USDT)
+    未下发：${unissued}(USDT)
     `;
 
     bot.sendMessage(chatId, message, {

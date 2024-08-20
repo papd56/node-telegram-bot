@@ -127,17 +127,11 @@ bot.on('new_chat_members', async (msg) => {
     let value = await cache.get('promote:群组欢迎语');
     let users = [];
     for (let member of newMembers) {
-      users.push({
-        botId: botInfo.id,
-        userId: member.id,
-        userName: member.username,
-        userNickname: member.first_name
-      });
       let value1 = await cache.get('promote:群组欢迎语按钮1');
       value1 = JSON.parse(JSON.parse(value1));
       let value2 = await cache.get('promote:群组欢迎语按钮2');
       value2 = JSON.parse(JSON.parse(value2));
-      await bot.sendMessage(chatId, JSON.parse(JSON.parse(value)).content.replace('X', member.first_name), {
+      let message = await bot.sendMessage(chatId, JSON.parse(JSON.parse(value)).content.replace('X', member.first_name), {
         reply_markup: {
           inline_keyboard: [
             [
@@ -147,6 +141,20 @@ bot.on('new_chat_members', async (msg) => {
           ]
         }
       });
+      let time = await cache.get('promote:消息自焚时间');
+      time = JSON.parse(JSON.parse(time)).content;
+      setTimeout(() => {
+        bot.deleteMessage(chatId, message.message_id);
+      }, time*1000);
+      let flag = await cache.exists('user:'+member.username);
+      if (!flag) {
+        users.push({
+          botId: botInfo.id,
+          userId: member.id,
+          userName: member.username,
+          userNickname: member.first_name
+        });
+      }
     }
     await fetchData('/bot/user/addUsers', JSON.stringify(users));
   }
@@ -276,14 +284,15 @@ bot.on('message', async (msg) => {
                     }
                     cache.del(keys);
                   }
+                }).then(async () => {
+                  let value = await cache.get('promote:' + messageText);
+                  value = JSON.parse(JSON.parse(value)).content.split('--分隔符--');
+                  await bot.sendMessage(chatId, value[0], {
+                    reply_to_message_id: messageId,
+                  });
+                  let message = await bot.sendMessage(chatId, value[1]);
+                  await bot.pinChatMessage(chatId, message.message_id);
                 });
-                let value = await cache.get('promote:' + messageText);
-                value = JSON.parse(JSON.parse(value)).content.split('--分隔符--');
-                await bot.sendMessage(chatId, value[0], {
-                  reply_to_message_id: messageId,
-                });
-                await bot.sendMessage(chatId, value[1]);
-                await bot.pinChatMessage(chatId, messageId+2)
               }
 
               if (messageText === '显示公群群名') {

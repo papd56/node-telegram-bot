@@ -29,7 +29,7 @@ const isueCacheKey = 'isueCacheKey';
 const inComingRecordKey = 'inComingRecordKey';
 
 const incomingRecords = [];
-const outgoingRecords = [];
+const billingStyleZeroRecords = [];
 const issueRecordsArr = [];
 // 替换成OKEx的API接口地址
 const apiUrl = 'https://www.okx.com/api/v5/market/tickers?instType=SPOT';
@@ -45,8 +45,9 @@ let todayTransaction = [];
 let issueTodayTransaction = [];
 let issueRecords = [];
 let billingStyle = [];
-let issUeStyle = [];
+let billingStyleZero = [];
 let outIssyedStyle = [];
+let newRecords = [];
 
 
 let fixedRate = 0.00; //全局变量汇率
@@ -189,6 +190,8 @@ bot.on("message", async (msg) => {
                                 issueofEntries);
 
                         } else {
+
+
                             bot.sendMessage(chatId, "请先设置汇率!")
                         }
                     }
@@ -365,21 +368,38 @@ bot.on("message", async (msg) => {
 
                             unissuedRmb = (parseFloat(dailyTotalAmount - issued) * fixedRate).toFixed(2);
 
-                            numberofEntries += 1;
+                            if (messageText === '+0') {
+                                await handleIncomingRecord(amountReceived, fixedRate);
+                                numberofEntries === 0;
+                                newRecords = new Array(incomingRecords.length).fill(0);
+                                billingStyleZero = await sendRecordsToUser(newRecords);
+                                await sendPymenTemplateAddZero(chatId,
+                                    dailyTotalAmount,
+                                    showldBeIssued,
+                                    issued,
+                                    unissued,
+                                    numberofEntries,
+                                    billingStyleZero,
+                                    issueRecords,
+                                    issueofEntries);
+                                return;
+                            } else {
+                                numberofEntries += 1;
+                                await handleIncomingRecordAddZero(amountReceived, fixedRate);
+                                billingStyle = await sendRecordsToUser(billingStyleZeroRecords);
+                                // const issueRecordsArr = myCache.get(inComingRecordKey);
+                                await sendPymenTemplate(chatId,
+                                    dailyTotalAmount,
+                                    showldBeIssued,
+                                    issued,
+                                    unissued,
+                                    numberofEntries,
+                                    billingStyle,
+                                    issueRecords,
+                                    issueofEntries);
+                                return;
+                            }
 
-                            await handleIncomingRecord(amountReceived, fixedRate);
-                            // const issueRecordsArr = myCache.get(inComingRecordKey);
-                            billingStyle = await sendRecordsToUser(incomingRecords);
-                            await sendPymenTemplate(chatId,
-                                dailyTotalAmount,
-                                showldBeIssued,
-                                issued,
-                                unissued,
-                                numberofEntries,
-                                billingStyle,
-                                issueRecords,
-                                issueofEntries);
-                            return;
                         } else {
                             bot.sendMessage(chatId, "请先设置汇率!")
                         }
@@ -792,6 +812,46 @@ function sendPymenTemplate(chatId,
 
 }
 
+
+//如果是 +0模版 则不输出
+function sendPymenTemplateAddZero(chatId,
+    dailyTotalAmount,
+    showldBeIssued,
+    issued,
+    unissued,
+    numberofEntries,
+    billingStyle,
+    issueRecords,
+    issueofEntries) {
+    const keyboard = {
+        inline_keyboard: [
+            [
+                { text: "公群导航", url: "https://t.me/dbcksq" },
+                // { text: "供求信息", url: "https://t.me/s/TelePlanting" },
+                { text: "点击跳转完整账单", url: "https://acbot.top/?id=" + chatId },
+            ],
+        ],
+    };
+
+    const message = `<a href = "https://t.me/@Guik88">518</a>
+    <b>入款(${numberofEntries}笔:)</b>
+    <b>下发(${issueofEntries}笔:)</b>
+    <b>入款总金额：</b>${dailyTotalAmount}
+    <b>费率：</b>${rate}
+    <b>固定汇率：</b>${fixedRate}
+    <b>应下发：</b>${showldBeIssued}(USDT)
+    <b>已下发：</b>${issued}(USDT)
+    <b>未下发：</b>${unissued}(USDT)
+    `;
+
+    bot.sendMessage(chatId, message, {
+        parse_mode: "HTML",
+        reply_markup: keyboard,
+        disable_web_page_preview: true,
+    });
+
+}
+
 //处理入款记录的函数
 async function handleIncomingRecord(amountReceived, fixedRate) {
     const beijingTime = await getBeijingTime();
@@ -808,6 +868,25 @@ async function handleIncomingRecord(amountReceived, fixedRate) {
 
     incomingRecords.unshift(incomingRecord);
 }
+
+
+//处理入款记录的函数+0
+async function handleIncomingRecordAddZero(amountReceived, fixedRate) {
+    const beijingTime = await getBeijingTime();
+    console.log("查看时间格式", beijingTime);
+    const timestamp = Math.floor(beijingTime.toMillis() / 1000);
+
+    const convertedAmount = (amountReceived / fixedRate).toFixed(2);
+    const incomingRecord = {
+        timestamp: timestamp,
+        amountReceived: amountReceived,
+        fixedRate: fixedRate,
+        convertedAmount: convertedAmount,
+    };
+
+    billingStyleZeroRecords.unshift(incomingRecord);
+}
+
 
 
 //处理下发记录的函数
@@ -833,8 +912,12 @@ async function getBeijingTime() {
 }
 
 async function sendRecordsToUser(records) {
+    const hasNonZero = records.some(item => item !== 0);
     let recordsArr = [];
     let text = "";
+    if (!hasNonZero) {
+        return;
+    }
     for (const incomingRecord of records) {
         const formattedRecord = await formatRecordText(incomingRecord);
         text = formattedRecord;

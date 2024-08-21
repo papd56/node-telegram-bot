@@ -406,7 +406,7 @@ bot.on("message", async (msg) => {
                     }
                 }
 
-                //进行数字输入计算
+                //进行数字输入计算 
                 if (messageText.startsWith("+") && !messageText.startsWith("设置")) {
                     const regex = /(-?\d+)(\/\d+(\.\d+)?)$/; // 修改捕获组
                     const match = messageText.match(regex);
@@ -485,7 +485,7 @@ bot.on("message", async (msg) => {
                         return;
                     }
                 }
-                //进行数字输入计算
+                //进行数字输入计算 
                 if (messageText.startsWith("-") && !messageText.startsWith("设置")) {
                     const regex = /(-?\d+)(\/\d+(\.\d+)?)$/; // 修改捕获组
                     const match = messageText.match(regex);
@@ -509,55 +509,6 @@ bot.on("message", async (msg) => {
                             });
                             return;
                         }
-
-                        // const regex = /^-?\d+\/\d+$/;
-                        // const numberMatch = messageText.match(regex);
-                        // if (numberMatch) {
-                        //     let num = Number(numberMatch[1]);
-                        //     const amountReceived = parseFloat(num.toFixed(2));
-                        //     let s = Number(amountReceived);
-                        //     if (fixedRate !== null) {
-
-                        //         if (fixedRate === 0) {
-                        //             const response = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=usd');
-                        //             fixedRate = response.data.tether.usd.toFixed(2);
-                        //             console.log("官网实时固定汇率：>>>>>>>>>>>>>>>>" + fixedRate)
-                        //         }
-
-                        //         dailyTotalAmount = (parseFloat(s) + Number(dailyTotalAmount)).toFixed(2);
-
-                        //         showldBeIssued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
-
-                        //         showldBeIssuedRmb = (dailyTotalAmount / parseFloat(fixedRate) * parseFloat(fixedRate)).toFixed(2);
-
-                        //         //已下发金额 = 入款总金额
-                        //         issued = (parseFloat(issued + dailyTotalAmount)).toFixed(2);
-
-                        //         issuedRmb = (parseFloat(issued + dailyTotalAmount) * fixedRate).toFixed(2);
-
-                        //         //未下发金额 = 入款总金额 - 已下发金额
-                        //         unissued = (parseFloat(dailyTotalAmount) - parseFloat(issued)).toFixed(2);
-
-                        //         unissuedRmb = (parseFloat(dailyTotalAmount - issued) * fixedRate).toFixed(2);
-
-                        //         numberofEntries += 1;
-                        //         await handleIncomingRecord(amountReceived, fixedRate);
-                        //         billingStyle = await sendRecordsToUser(incomingRecords);
-                        //         console.log("查看格式化样式", billingStyle);
-                        //         await sendPymenTemplate(chatId,
-                        //             dailyTotalAmount,
-                        //             showldBeIssued,
-                        //             issued,
-                        //             unissued,
-                        //             numberofEntries,
-                        //             billingStyle,
-                        //             issueRecords,
-                        //             issueofEntries);
-                        //     }
-                        //     return;
-                        // } else {
-                        //     bot.sendMessage(chatId, "请先设置汇率!")
-                        // }
                         return;
                     } else {
                         bot.sendMessage(chatId, "请输入正确的数据格式")
@@ -565,73 +516,6 @@ bot.on("message", async (msg) => {
                     }
                 }
 
-                //如果机器人接收到的指令是 - 做减法
-                // if (messageText.startsWith("-")) {
-                //     const numberMatch = messageText.match(/(\d+(\.\d{1,2})?)/);
-                //     if (numberMatch) {
-                //         let num = Number(numberMatch[0]);
-                //         const amountReceived = parseFloat(num.toFixed(2));
-                //         let s = Number(amountReceived);
-                //         if (fixedRate !== null) {
-
-                //             // if (fixedRate === 0.00) {
-                //             //     console.log("除数不能为零");
-                //             //     bot.sendMessage(chatId, "汇率为零，请先设置汇率!");
-                //             //     return;
-                //             // }
-
-                //             if (fixedRate === 0) {
-                //                 const response = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=usd');
-                //                 fixedRate = response.data.tether.usd.toFixed(2);
-                //             }
-
-                //             dailyTotalAmount = (parseFloat(s) + Number(dailyTotalAmount)).toFixed(2);
-
-                //             showldBeIssued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
-
-                //             showldBeIssuedRmb = (dailyTotalAmount / parseFloat(fixedRate) * parseFloat(fixedRate)).toFixed(2);
-
-                //             //已下发金额 = 入款总金额
-                //             issued = (parseFloat(issued + dailyTotalAmount)).toFixed(2);
-
-                //             issuedRmb = (parseFloat(issued + dailyTotalAmount) * fixedRate).toFixed(2);
-
-                //             //未下发金额 = 入款总金额 - 已下发金额
-                //             unissued = (parseFloat(dailyTotalAmount) - parseFloat(issued)).toFixed(2);
-
-                //             unissuedRmb = (parseFloat(dailyTotalAmount - issued) * fixedRate).toFixed(2);
-
-                //             numberofEntries += 1;
-                //             await handleIncomingRecord(amountReceived, fixedRate);
-                //             billingStyle = await sendRecordsToUser(incomingRecords);
-                //             console.log("查看格式化样式", billingStyle);
-                //             await sendPymenTemplate(chatId,
-                //                 dailyTotalAmount,
-                //                 showldBeIssued,
-                //                 issued,
-                //                 unissued,
-                //                 numberofEntries,
-                //                 billingStyle);
-
-                //         } else {
-                //             bot.sendMessage(chatId, "请先设置汇率!")
-                //         }
-                //     }
-                // }
-
-                // //删除聊天机器人
-                // try {
-                //     if (messageText.startsWith("踢出")) {
-                //         const isAdmin = await checkifUserIsAdmin(bot, msg);
-                //         if (isAdmin === 1) {
-                //             bot.logOut(true);
-                //             bot.sendMessage(chatId, "已踢出");
-                //         }
-                //     }
-                // } catch (error) {
-                //     console.log("机器人删除失败!");
-                //     throw error;
-                // }
                 try {
                     if (messageText === "删除账单") {
                         const isAdmin = await checkifUserIsAdmin(bot, msg);
@@ -758,9 +642,9 @@ function deleteBillTemplate(chatId,
     <b>入款总金额：</b>${dailyTotalAmount}
     <b>费率：</b>${rate}
     <b>固定汇率：</b>${fixedRate}
-    <b>应下发：</b>${showldBeIssued}(USDT)${showldBeIssuedRmb}(RMB)
-    <b>已下发：</b>${issued}(USDT)${issuedRmb}(RMB)
-    <b>未下发：</b>${unissued}(USDT)${unissuedRmb}(RMB)
+    <b>应下发：</b>${showldBeIssued}(USDT)
+    <b>已下发：</b>${issued}(USDT)
+    <b>未下发：</b>${unissued}(USDT)
     `;
 
     bot.sendMessage(chatId, message, {
@@ -791,21 +675,20 @@ function sendPymenTemplate(chatId,
         ],
     };
 
-    const message = `[518](https://t.me/@Guik88)
-    入款(${numberofEntries}笔:)
+    const message = `<a href = "https://t.me/@Guik88">518</a>
+    <b>入款(${numberofEntries}笔:)</b>
     ${billingStyle.join('\n')}
-    下发(${issueofEntries}笔:)
+    <b>下发(${issueofEntries}笔:)</b>
     ${issueRecords.join('\n')}
-    入款总金额：${dailyTotalAmount}
-    费率：${rate}
-    固定汇率：${fixedRate}
-    应下发：${showldBeIssued}(USDT)
-    已下发：${issued}(USDT)
-    未下发：${unissued}(USDT)
+    <b>入款总金额：</b>${dailyTotalAmount}
+    <b>费率：</b>${rate}
+    <b>固定汇率：</b>${fixedRate}
+    <b>应下发：</b>${showldBeIssued}(USDT)
+    <b>已下发：</b>${issued}(USDT)
+    <b>未下发：</b>${unissued}(USDT)
     `;
-
     bot.sendMessage(chatId, message, {
-        parse_mode: "Markdown",
+        parse_mode: "HTML",
         reply_markup: keyboard,
         disable_web_page_preview: true,
     });
@@ -833,15 +716,15 @@ function sendPymenTemplateAddZero(chatId,
         ],
     };
 
-    const message = `[518](https://t.me/@Guik88)
-    入款(${numberofEntries}笔:)
-    下发(${issueofEntries}笔:)
-    入款总金额：${dailyTotalAmount}
-    费率：${rate}
-    固定汇率：${fixedRate}
-    应下发：${showldBeIssued}(USDT)
-    已下发：${issued}(USDT)
-    未下发：${unissued}(USDT)
+    const message = `<a href = "https://t.me/@Guik88">518</a>
+    <b>入款(${numberofEntries}笔:)</b>
+    <b>下发(${issueofEntries}笔:)</b>
+    <b>入款总金额：</b>${dailyTotalAmount}
+    <b>费率：</b>${rate}
+    <b>固定汇率：</b>${fixedRate}
+    <b>应下发：</b>${showldBeIssued}(USDT)
+    <b>已下发：</b>${issued}(USDT)
+    <b>未下发：</b>${unissued}(USDT)
     `;
 
     bot.sendMessage(chatId, message, {

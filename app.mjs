@@ -642,9 +642,9 @@ function deleteBillTemplate(chatId,
     <b>入款总金额：</b>${dailyTotalAmount}
     <b>费率：</b>${rate}
     <b>固定汇率：</b>${fixedRate}
-    <b>应下发：</b>${showldBeIssued}(USDT)${showldBeIssuedRmb}(RMB)
-    <b>已下发：</b>${issued}(USDT)${issuedRmb}(RMB)
-    <b>未下发：</b>${unissued}(USDT)${unissuedRmb}(RMB)
+    <b>应下发：</b>${showldBeIssued}(USDT)
+    <b>已下发：</b>${issued}(USDT)
+    <b>未下发：</b>${unissued}(USDT)
     `;
 
     bot.sendMessage(chatId, message, {
@@ -682,14 +682,11 @@ function sendPymenTemplate(chatId,
     ${issueRecords.join('\n')}
     <b>入款总金额：</b>${dailyTotalAmount}
     <b>费率：</b>${rate}
-
-
     <b>固定汇率：</b>${fixedRate}
     <b>应下发：</b>${showldBeIssued}(USDT)
     <b>已下发：</b>${issued}(USDT)
     <b>未下发：</b>${unissued}(USDT)
     `;
-
     bot.sendMessage(chatId, message, {
         parse_mode: "HTML",
         reply_markup: keyboard,

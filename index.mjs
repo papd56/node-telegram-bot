@@ -4,7 +4,7 @@ import http from 'http';
 
 // redis缓存
 const cache = new Redis({
-  host: '47.76.223.250',
+  host: '127.0.0.1',
   port: 6379,
   db: 0,
   retryStrategy: (options) => {

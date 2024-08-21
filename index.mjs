@@ -218,126 +218,6 @@ bot.on('message', async (msg) => {
               await sendMessage(chatId, messageId, messageText);
             }
             if (admin) {
-              if (messageText.startsWith('修改公群群名')) {
-                let groupName = messageText.substring(6);
-                // 更改群组名称
-                await bot.setChatTitle(chatId, groupName);
-                await sendMessage(chatId, messageId, '修改公群群名');
-                let group = {
-                  botId: botInfo.id,
-                  groupId: chatId,
-                  groupName: groupName
-                };
-                await fetchData('/bot/group/editGroup', JSON.stringify(group));
-              }
-
-              if (messageText === '设置简介') {
-                await bot.setChatDescription(chatId, replyMessage.text);
-                await sendMessage(chatId, messageId, messageText);
-              }
-
-              if (messageText === '担保关闭') {
-                if (!msg.chat.title.includes('已退押')) {
-                  let groupName = msg.chat.title.split('已押')[0] + '已退押';
-                  await bot.setChatTitle(chatId, groupName);
-                  let group = {
-                    botId: botInfo.id,
-                    groupId: chatId,
-                    groupName: groupName
-                  };
-                  await fetchData('/bot/group/editGroup', JSON.stringify(group));
-                }
-                await bot.setChatDescription(chatId, '-');
-                await bot.setChatDescription(chatId, '');
-
-                // 获取群组管理员信息并下掉非官方管理
-                await bot.getChatAdministrators(chatId)
-                  .then(async (admins) => {
-                    for (let admin of admins) {
-                      let flag = await cache.exists('admin:' + admin.user.id);
-                      if (!flag) {
-                        // 将该用户降级为普通用户
-                        bot.promoteChatMember(chatId, admin.user.id, {
-                          can_manage_chat: false,
-                          can_change_info: false,        // 修改群组信息
-                          can_delete_messages: false,    // 删除信息
-                          can_restrict_members: false,   // 封禁成员
-                          can_invite_users: false,       // 添加成员
-                          can_pin_messages: false,       // 置顶消息
-                          can_promote_members: false     // 添加管理员
-                        }).catch((error) => {
-                          console.error('Error demoting user:', error);
-                        });
-                      }
-                    }
-                  })
-                  .catch((error) => {
-                    console.error('Error fetching administrators:', error);
-                  });
-
-                scanKeys('pin:*').then(async keys => {
-                  if (keys.length > 0) {
-                    for (let key of keys) {
-                      await bot.unpinChatMessage(chatId, {
-                        message_id: key.substring(4)
-                      });
-                    }
-                    cache.del(keys);
-                  }
-                }).then(async () => {
-                  let value = await cache.get('promote:' + messageText);
-                  value = JSON.parse(JSON.parse(value)).content.split('--分隔符--');
-                  await bot.sendMessage(chatId, value[0], {
-                    reply_to_message_id: messageId,
-                  });
-                  let message = await bot.sendMessage(chatId, value[1]);
-                  await bot.pinChatMessage(chatId, message.message_id);
-                });
-              }
-
-              if (messageText === '显示公群群名') {
-                await bot.sendMessage(chatId, msg.chat.title, {
-                  reply_to_message_id: messageId,
-                });
-              }
-
-              if (messageText === '真公群') {
-                //真公群  发送消息 发送图片
-                await bot.setChatPermissions(chatId, newPermissions);
-                await sendMessage(chatId, messageId, messageText);
-              }
-
-              if (messageText.startsWith('设置群老板 @') || messageText.startsWith('设置群业务员 @')) {
-                let user = await cache.get('user:' + msg.text.split(' @')[1]);
-                user = JSON.parse(JSON.parse(user));
-                await bot.promoteChatMember(chatId, user.userId, { can_delete_messages: true });
-                if (messageText.startsWith('设置群老板 @')) {
-                  await bot.setChatAdministratorCustomTitle(chatId, user.userId, '本公群老板，小心骗子假冒！');
-                } else {
-                  await bot.setChatAdministratorCustomTitle(chatId, user.userId, '本公群业务员，小心骗子假冒！');
-                }
-                await sendMessage(chatId, messageId, messageText.split(' @')[0]);
-              }
-
-              if (messageText.startsWith('移除管理 @') || messageText.startsWith('移除管理 @')) {
-                let user = await cache.get('user:' + messageText.split('@')[1]);
-                await bot.promoteChatMember(chatId, JSON.parse(JSON.parse(user)).userId, {
-                  can_change_info: false,        // 修改群组信息
-                  can_delete_messages: false,    // 删除信息
-                  can_restrict_members: false,   // 封禁成员
-                  can_invite_users: false,       // 添加成员
-                  can_pin_messages: false,       // 置顶消息
-                  can_promote_members: false     // 添加管理员
-                });
-                await sendMessage(chatId, messageId, '移除管理');
-              }
-
-              if (messageText.startsWith('踢出 @') || messageText.startsWith('踢出 @')) {
-                let user = await cache.get('user:' + messageText.split('@')[1]);
-                await bot.banChatMember(chatId, JSON.parse(JSON.parse(user)).userId, {});
-                await sendMessage(chatId, messageId, '踢出');
-              }
-
               if (replyMessage) {
                 if (messageText === '设置群老板' || messageText === '设置群业务员') {
                   //设置群老板管理员权限
@@ -350,14 +230,14 @@ bot.on('message', async (msg) => {
                   await sendMessage(chatId, messageId, messageText);
                 }
 
-                if (messageText === '开启权限') {
+                if (messageText === '移除管理') {
                   await bot.promoteChatMember(chatId, replyUserId, {
-                    can_change_info: true,        // 修改群组信息
-                    can_delete_messages: true,    // 删除信息
-                    can_restrict_members: true,   // 封禁成员
-                    can_invite_users: true,       // 添加成员
-                    can_pin_messages: true,       // 置顶消息
-                    can_promote_members: true     // 添加管理员
+                    can_change_info: false,        // 修改群组信息
+                    can_delete_messages: false,    // 删除信息
+                    can_restrict_members: false,   // 封禁成员
+                    can_invite_users: false,       // 添加成员
+                    can_pin_messages: false,       // 置顶消息
+                    can_promote_members: false     // 添加管理员
                   });
                   await sendMessage(chatId, messageId, messageText);
                 }
@@ -375,9 +255,171 @@ bot.on('message', async (msg) => {
                   await cache.del('pin:' + replyMessageId);
                 }
 
+                if (messageText === '禁言') {
+                  await bot.restrictChatMember(chatId, replyUserId, {
+                    until_date: 86400,
+                    can_send_messages: false
+                  });
+                  await sendMessage(chatId, messageId, messageText);
+                }
+
                 if (messageText === '踢出') {
                   await bot.banChatMember(chatId, replyUserId, {});
                   await sendMessage(chatId, messageId, messageText);
+                }
+
+                if (messageText === '开启权限') {
+                  await bot.promoteChatMember(chatId, replyUserId, {
+                    can_change_info: true,        // 修改群组信息
+                    can_delete_messages: true,    // 删除信息
+                    can_restrict_members: true,   // 封禁成员
+                    can_invite_users: true,       // 添加成员
+                    can_pin_messages: true,       // 置顶消息
+                    can_promote_members: true     // 添加管理员
+                  });
+                  await sendMessage(chatId, messageId, messageText);
+                }
+              }else {
+                if (messageText.startsWith('修改公群群名')) {
+                  let groupName = messageText.substring(6);
+                  // 更改群组名称
+                  await bot.setChatTitle(chatId, groupName);
+                  await sendMessage(chatId, messageId, '修改公群群名');
+                  let group = {
+                    botId: botInfo.id,
+                    groupId: chatId,
+                    groupName: groupName
+                  };
+                  await fetchData('/bot/group/editGroup', JSON.stringify(group));
+                }
+
+                if (messageText === '设置简介') {
+                  await bot.setChatDescription(chatId, replyMessage.text);
+                  await sendMessage(chatId, messageId, messageText);
+                }
+
+                if (messageText === '显示公群群名') {
+                  await bot.sendMessage(chatId, msg.chat.title, {
+                    reply_to_message_id: messageId,
+                  });
+                }
+
+                if (messageText === '真公群') {
+                  //真公群  发送消息 发送图片
+                  await bot.setChatPermissions(chatId, newPermissions);
+                  await sendMessage(chatId, messageId, messageText);
+                }
+
+                if (messageText.startsWith('设置群老板 @') || messageText.startsWith('设置群业务员 @')) {
+                  let user = await cache.get('user:' + msg.text.split(' @')[1]);
+                  user = JSON.parse(JSON.parse(user));
+                  await bot.promoteChatMember(chatId, user.userId, { can_delete_messages: true });
+                  if (messageText.startsWith('设置群老板 @')) {
+                    await bot.setChatAdministratorCustomTitle(chatId, user.userId, '本公群老板，小心骗子假冒！');
+                  } else {
+                    await bot.setChatAdministratorCustomTitle(chatId, user.userId, '本公群业务员，小心骗子假冒！');
+                  }
+                  await sendMessage(chatId, messageId, messageText.split(' @')[0]);
+                }
+
+                if (messageText.startsWith('移除管理 @')) {
+                  let user = await cache.get('user:' + messageText.split('@')[1]);
+                  await bot.promoteChatMember(chatId, JSON.parse(JSON.parse(user)).userId, {
+                    can_change_info: false,        // 修改群组信息
+                    can_delete_messages: false,    // 删除信息
+                    can_restrict_members: false,   // 封禁成员
+                    can_invite_users: false,       // 添加成员
+                    can_pin_messages: false,       // 置顶消息
+                    can_promote_members: false     // 添加管理员
+                  });
+                  await sendMessage(chatId, messageId, '移除管理');
+                }
+
+                if (messageText.startsWith('禁言 @')) {
+                  let user = await cache.get('user:' + messageText.split(' @')[1]);
+                  await bot.restrictChatMember(chatId, JSON.parse(JSON.parse(user)).userId, {
+                    until_date: 10,
+                    can_send_messages: false
+                  });
+                  await sendMessage(chatId, messageId, '禁言');
+                }
+
+                if (messageText.startsWith('踢出 @')) {
+                  let user = await cache.get('user:' + messageText.split(' @')[1]);
+                  await bot.banChatMember(chatId, JSON.parse(JSON.parse(user)).userId, {});
+                  await sendMessage(chatId, messageId, '踢出');
+                }
+
+                if (messageText.startsWith('开启权限 @')) {
+                  let user = await cache.get('user:' + messageText.split(' @')[1]);
+                  await bot.promoteChatMember(chatId, JSON.parse(JSON.parse(user)).userId, {
+                    can_change_info: true,        // 修改群组信息
+                    can_delete_messages: true,    // 删除信息
+                    can_restrict_members: true,   // 封禁成员
+                    can_invite_users: true,       // 添加成员
+                    can_pin_messages: true,       // 置顶消息
+                    can_promote_members: true     // 添加管理员
+                  });
+                  await sendMessage(chatId, messageId, '开启权限');
+                }
+
+                if (messageText === '担保关闭') {
+                  if (!msg.chat.title.includes('已退押')) {
+                    let groupName = msg.chat.title.split('已押')[0] + '已退押';
+                    await bot.setChatTitle(chatId, groupName);
+                    let group = {
+                      botId: botInfo.id,
+                      groupId: chatId,
+                      groupName: groupName
+                    };
+                    await fetchData('/bot/group/editGroup', JSON.stringify(group));
+                  }
+                  await bot.setChatDescription(chatId, '-');
+                  await bot.setChatDescription(chatId, '');
+
+                  // 获取群组管理员信息并下掉非官方管理
+                  await bot.getChatAdministrators(chatId)
+                    .then(async (admins) => {
+                      for (let admin of admins) {
+                        let flag = await cache.exists('admin:' + admin.user.id);
+                        if (!flag) {
+                          // 将该用户降级为普通用户
+                          bot.promoteChatMember(chatId, admin.user.id, {
+                            can_manage_chat: false,
+                            can_change_info: false,        // 修改群组信息
+                            can_delete_messages: false,    // 删除信息
+                            can_restrict_members: false,   // 封禁成员
+                            can_invite_users: false,       // 添加成员
+                            can_pin_messages: false,       // 置顶消息
+                            can_promote_members: false     // 添加管理员
+                          }).catch((error) => {
+                            console.error('Error demoting user:', error);
+                          });
+                        }
+                      }
+                    })
+                    .catch((error) => {
+                      console.error('Error fetching administrators:', error);
+                    });
+
+                  scanKeys('pin:*').then(async keys => {
+                    if (keys.length > 0) {
+                      for (let key of keys) {
+                        await bot.unpinChatMessage(chatId, {
+                          message_id: key.substring(4)
+                        });
+                      }
+                      cache.del(keys);
+                    }
+                  }).then(async () => {
+                    let value = await cache.get('promote:' + messageText);
+                    value = JSON.parse(JSON.parse(value)).content.split('--分隔符--');
+                    await bot.sendMessage(chatId, value[0], {
+                      reply_to_message_id: messageId,
+                    });
+                    let message = await bot.sendMessage(chatId, value[1]);
+                    await bot.pinChatMessage(chatId, message.message_id);
+                  });
                 }
               }
             }

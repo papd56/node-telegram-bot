@@ -2,12 +2,13 @@ import TelegramBot from 'node-telegram-bot-api';
 import Redis from 'ioredis';
 import http from 'http';
 
-const host = '127.0.0.1';
+const host = '8.217.124.68';
 // redis缓存
 const cache = new Redis({
   host: host,
   port: 6379,
   db: 0,
+  password: 123456,
   retryStrategy: (options) => {
     if (options.error && options.error.code === 'ECONNREFUSED') {
       // Handle ECONNREFUSED differently

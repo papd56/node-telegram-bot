@@ -88,7 +88,7 @@ await fetchData('/redisCache/list', '');
 }
 main(); */
 
-const token = '7269675720:AAEEkkXm30WMsjR4ZWysHDPQTQeym0aUX-Y';
+const token = '7248031090:AAGzO1PZnSp4zc717AKLYhusQeO1wluJt2I';
 import checkifUserIsAdmin from './adminCheck.mjs';
 
 const bot = new TelegramBot(token, {
@@ -145,8 +145,8 @@ bot.on('new_chat_members', async (msg) => {
       time = JSON.parse(JSON.parse(time)).content;
       setTimeout(() => {
         bot.deleteMessage(chatId, message.message_id);
-      }, time * 1000);
-      let flag = await cache.exists('user:' + member.username);
+      }, time*1000);
+      let flag = await cache.exists('user:'+member.username);
       if (!flag) {
         users.push({
           botId: botInfo.id,
@@ -197,23 +197,10 @@ bot.on('message', async (msg) => {
             await cache.set('time:' + messageText, Date.now());
           }
         }
-        let admin = await cache.exists('admin:' + userId);
-        if (admin) {
-          if (messageText === '开启权限') {
-            await bot.promoteChatMember(chatId, userId, {
-              can_change_info: true,        // 修改群组信息
-              can_delete_messages: true,    // 删除信息
-              can_restrict_members: true,   // 封禁成员
-              can_invite_users: true,       // 添加成员
-              can_pin_messages: true,       // 置顶消息
-              can_promote_members: true     // 添加管理员
-            });
-            await sendMessage(chatId, messageId, messageText);
-          }
-        }
         let isAdmin = await checkifUserIsAdmin(bot, msg);
-        if (isAdmin === 1) {
-          if (messageText) {
+        if (messageText) {
+          let admin = await cache.exists('admin:' + userId);
+          if (isAdmin === 1) {
             if (messageText === '删除') {
               await bot.deleteMessage(chatId, replyMessageId);
               await sendMessage(chatId, messageId, messageText);
@@ -281,7 +268,7 @@ bot.on('message', async (msg) => {
                   await bot.banChatMember(chatId, replyUserId, {});
                   await sendMessage(chatId, messageId, messageText);
                 }
-              } else {
+              }else {
                 if (messageText.startsWith('修改公群群名')) {
                   let groupName = messageText.substring(6);
                   // 更改群组名称
@@ -340,7 +327,7 @@ bot.on('message', async (msg) => {
                 if (messageText.startsWith('禁言 @')) {
                   let user = await cache.get('user:' + messageText.split(' @')[1]);
                   await bot.restrictChatMember(chatId, JSON.parse(JSON.parse(user)).userId, {
-                    until_date: 86400,
+                    until_date: 10,
                     can_send_messages: false
                   });
                   await sendMessage(chatId, messageId, '禁言');
@@ -410,7 +397,31 @@ bot.on('message', async (msg) => {
                     await bot.pinChatMessage(chatId, message.message_id);
                   });
                 }
+
+                if (messageText === '开启权限') {
+                  await bot.promoteChatMember(chatId, userId, {
+                    can_change_info: true,        // 修改群组信息
+                    can_delete_messages: true,    // 删除信息
+                    can_restrict_members: true,   // 封禁成员
+                    can_invite_users: true,       // 添加成员
+                    can_pin_messages: true,       // 置顶消息
+                    can_promote_members: true     // 添加管理员
+                  });
+                  await sendMessage(chatId, messageId, messageText);
+                }
               }
+            }
+          } else if (admin) {
+            if (messageText === '开启权限') {
+              await bot.promoteChatMember(chatId, userId, {
+                can_change_info: true,        // 修改群组信息
+                can_delete_messages: true,    // 删除信息
+                can_restrict_members: true,   // 封禁成员
+                can_invite_users: true,       // 添加成员
+                can_pin_messages: true,       // 置顶消息
+                can_promote_members: true     // 添加管理员
+              });
+              await sendMessage(chatId, messageId, messageText);
             }
           }
         }

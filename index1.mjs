@@ -2,9 +2,10 @@ import TelegramBot from 'node-telegram-bot-api';
 import Redis from 'ioredis';
 import http from 'http';
 
+const host = '127.0.0.1';
 // redis缓存
 const cache = new Redis({
-  host: '127.0.0.1',
+  host: host,
   port: 6379,
   db: 0,
   retryStrategy: (options) => {
@@ -59,7 +60,7 @@ const scanKeys = async (pattern) => {
 
 async function fetchData(path, data) {
   let options = {
-    hostname: 'localhost',
+    hostname: host,
     port: 8897,
     path: path,
     method: 'POST',
@@ -88,7 +89,7 @@ await fetchData('/redisCache/list', '');
 }
 main(); */
 
-const token = '7269675720:AAEEkkXm30WMsjR4ZWysHDPQTQeym0aUX-Y';
+const token = '7248031090:AAGzO1PZnSp4zc717AKLYhusQeO1wluJt2I';
 import checkifUserIsAdmin from './adminCheck.mjs';
 
 const bot = new TelegramBot(token, {

@@ -1,6 +1,7 @@
 import TelegramBot from 'node-telegram-bot-api';
 import checkifUserIsAdmin from "./adminCheck.mjs"
 import { DateTime } from "luxon";
+import Redis from 'ioredis';
 import axios from 'axios';
 import NodeCache from 'node-cache';
 import mysql from 'mysql2';
@@ -12,16 +13,55 @@ const bot = new TelegramBot(token, {
 });
 
 //初始化一个mysql数据库实例
-const connection = mysql.createConnection({
-    host: '47.76.223.250',
-    port: '3306',
-    user: 'root',
-    password: 'Qwer1234..',
-    database: 'bot'
+// const connection = mysql.createConnection({
+//     host: '47.76.223.250',
+//     port: '3306',
+//     user: 'root',
+//     password: 'Qwer1234..',
+//     database: 'ruoyi'
+// });
+const host = '8.217.124.68';
+// redis缓存
+const cache = new Redis({
+    host: host,
+    port: 6379,
+    db: 0,
+    password: 123456,
+    retryStrategy: (options) => {
+        if (options.error && options.error.code === 'ECONNREFUSED') {
+            // Handle ECONNREFUSED differently
+            console.error('Redis connection refused');
+            return new Error('Redis connection refused');
+        }
+
+        if (options.attempt > 10) {
+            // End reconnecting on a specific error and flush all commands with
+            // individual error
+            console.error('Redis connection failed after 10 attempts');
+            return new Error('Too many retry attempts');
+        }
+
+        if (options.total_retry_time > 1000 * 60 * 5) {
+            // End reconnecting after a specific timeout and flush all commands
+            // with individual error
+            console.error('Redis connection failed after 5 minutes');
+            return new Error('Retry time exhausted');
+        }
+
+        if (options.error !== undefined && options.error.code === 'ECONNRESET' && options.attempt < 10) {
+            // End reconnecting on a specific error and flush all commands with
+            // individual error
+            console.error('Redis connection reset');
+            return new Error('Redis connection reset');
+        }
+
+        // reconnect after
+        return Math.min(options.attempt * 100, 3000);
+    },
+    connect_timeout: 1000, // 连接超时时间
+    idleTimeout: 60000
 });
 
-// 创建一个缓存实例，设置缓存过期时间为 10 秒
-const myCache = new NodeCache({ stdTTL: 1800 });
 
 //下发缓存key
 const isueCacheKey = 'isueCacheKey';
@@ -63,6 +103,7 @@ let issuedRmb = 0.00; //已下发金额rmb
 let unissued = 0.00; //未下发金额
 let unissuedRmb = 0.00; //未下发金额Rmb
 
+
 // 替换为你的 OKEx API 密钥和密钥秘钥
 const apiKey = '56b9768f-1b05-4225-b3b9-ae1e29afe22d';
 const secretKey = '2A178FE570AD0E75A3C7679B07681C55';
@@ -85,16 +126,10 @@ bot.on("message", async (msg) => {
     if (messages.length > 10) {
         messages.shift();
     }
-
     // 获取上一条消息
     const previousMessage = messages[messages.length - 2];
-    if (previousMessage) {
-        // 使用上一条消息
-        console.log("上一条消息:", previousMessage.text);
-    }
-
-
-
+    const userId = msg.from.id;
+    let replyUserId = userId;
     const chatId = msg.chat.id;
     const messageText = msg.text;
     const messageId = msg.message_id;
@@ -190,11 +225,33 @@ bot.on("message", async (msg) => {
                                 issueofEntries);
 
                         } else {
-
-
                             bot.sendMessage(chatId, "请先设置汇率!")
                         }
                     }
+                }
+
+                if (messageText.startsWith('移除管理 @')) {
+                    let user = await cache.get('user:' + messageText.split('@')[1]);
+                    await bot.promoteChatMember(chatId, JSON.parse(JSON.parse(user)).userId, {
+                        can_change_info: false,        // 修改群组信息
+                        can_delete_messages: false,    // 删除信息
+                        can_restrict_members: false,   // 封禁成员
+                        can_invite_users: false,       // 添加成员
+                        can_pin_messages: false,       // 置顶消息
+                        can_promote_members: false     // 添加管理员
+                    });
+                    await sendMessage(chatId, messageId, '移除管理');
+                }
+
+                if (messageText === '踢出') {
+                    await bot.banChatMember(chatId, replyUserId, {});
+                    await sendMessage(chatId, messageId, messageText);
+                }
+
+                if (messageText.startsWith('踢出 @')) {
+                    let user = await cache.get('user:' + messageText.split(' @')[1]);
+                    await bot.banChatMember(chatId, JSON.parse(JSON.parse(user)).userId, {});
+                    await sendMessage(chatId, messageId, '踢出');
                 }
 
                 if (messageText === "z0") {
@@ -252,6 +309,10 @@ bot.on("message", async (msg) => {
                         // 非管理员用户，返回提示信息
                         await bot.sendMessage(chatId, '您没有权限执行此操作');
                     }
+                }
+
+                if (messageText === "开始记账") {
+                    bot.sendMessage(chatId, "记账功能开始工作");
                 }
 
                 if (messageText === "+0") {
@@ -548,7 +609,7 @@ bot.on("message", async (msg) => {
 
                             clearArray(incomingRecords);
                             clearArray(issueRecordsArr);
-                            bot.sendMessage(chatId, "本次账单清理完成！", {
+                            bot.sendMessage(chatId, "今日账单清理完成", {
                                 reply_to_message_id: originalMessageId
                             });
                         } else {
@@ -636,12 +697,13 @@ function deleteBillTemplate(chatId,
     };
 
     const message = `<a href = "https://t.me/@Guik88">518</a>
-    <b>入款(${numberofEntries}笔: )</b>
-    ${billingStyle}
-    <b>入款(${issueofEntries}笔: )</b>
-    <b>入款总金额：</b>${dailyTotalAmount}
+    <b>已入款(${numberofEntries}笔: )</b>
+    <b>暂无入款</b>
+    <b>已下发(${issueofEntries}笔: )</b>
+    <b>暂无下发</b>
+    <b>总入款金额：</b>${dailyTotalAmount}
     <b>费率：</b>${rate}
-    <b>固定汇率：</b>${fixedRate}
+    <b>实时汇率：</b>${fixedRate}
     <b>应下发：</b>${showldBeIssued}(USDT)
     <b>已下发：</b>${issued}(USDT)
     <b>未下发：</b>${unissued}(USDT)
@@ -676,13 +738,13 @@ function sendPymenTemplate(chatId,
     };
 
     const message = `<a href = "https://t.me/@Guik88">518</a>
-    <b>入款(${numberofEntries}笔:)</b>
+    <b>已入款(${numberofEntries}笔:)</b>
     ${billingStyle.join('\n')}
-    <b>下发(${issueofEntries}笔:)</b>
+    <b>已下发(${issueofEntries}笔:)</b>
     ${issueRecords.join('\n')}
-    <b>入款总金额：</b>${dailyTotalAmount}
+    <b>总入款总金额：</b>${dailyTotalAmount}
     <b>费率：</b>${rate}
-    <b>固定汇率：</b>${fixedRate}
+    <b>实时汇率：</b>${fixedRate}
     <b>应下发：</b>${showldBeIssued}(USDT)
     <b>已下发：</b>${issued}(USDT)
     <b>未下发：</b>${unissued}(USDT)
@@ -717,11 +779,11 @@ function sendPymenTemplateAddZero(chatId,
     };
 
     const message = `<a href = "https://t.me/@Guik88">518</a>
-    <b>入款(${numberofEntries}笔:)</b>
-    <b>下发(${issueofEntries}笔:)</b>
-    <b>入款总金额：</b>${dailyTotalAmount}
+    <b>已入款(${numberofEntries}笔:)</b>
+    <b>已下发(${issueofEntries}笔:)</b>
+    <b>总入款总金额：</b>${dailyTotalAmount}
     <b>费率：</b>${rate}
-    <b>固定汇率：</b>${fixedRate}
+    <b>实时汇率：</b>${fixedRate}
     <b>应下发：</b>${showldBeIssued}(USDT)
     <b>已下发：</b>${issued}(USDT)
     <b>未下发：</b>${unissued}(USDT)

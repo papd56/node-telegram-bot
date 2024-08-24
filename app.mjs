@@ -161,7 +161,7 @@ bot.on("message", async (msg) => {
 
             try {
                 if (messageText.startsWith("设置费率")) {
-                    const numberRate = messageText.match(/(\d+(\.\d{1,2})?)/);
+                    const numberRate = messageText.match(/(-?\d+(\.\d{1,2})?)/);
                     if (numberRate) {
                         let num = Number(numberRate[0]);
                         rate = parseFloat(num.toFixed(2));
@@ -446,7 +446,17 @@ bot.on("message", async (msg) => {
                                 return;
                             } else {
                                 numberofEntries += 1;
-                                await handleIncomingRecordAddZero(amountReceived, fixedRate);
+                                if (rate !== "0" && rate > 0) {
+                                    let amountReceiveds = 0;
+                                    amountReceiveds = amountReceived - amountReceived * rate / 100
+                                    await handleIncomingRecordAddZero(amountReceiveds, rate);
+                                } else if (rate !== "0" && rate < 0) {
+                                    let amountReceiveds = 0;
+                                    amountReceiveds = amountReceived - amountReceived * rate / 100
+                                    await handleIncomingRecordAddZero(amountReceiveds, Math.abs(rate));
+                                } else {
+                                    await handleIncomingRecordAddZero(amountReceived, fixedRate);
+                                }
                                 billingStyle = await sendRecordsToUser(billingStyleZeroRecords);
                                 // const issueRecordsArr = myCache.get(inComingRecordKey);
                                 await sendPymenTemplate(chatId,

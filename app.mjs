@@ -137,7 +137,7 @@ bot.on("message", async (msg) => {
 
     try {
         const isAdmin = await checkifUserIsAdmin(bot, msg);
-        if (isAdmin === 1) {
+        if (isAdmin) {
             const originalMessageId = msg.message_id;
             try {
                 if (messageText.startsWith("设置汇率")) {
@@ -256,7 +256,7 @@ bot.on("message", async (msg) => {
 
                 if (messageText === "z0") {
                     const isAdmin = await checkifUserIsAdmin(bot, msg);
-                    if (isAdmin === 1) {
+                    if (isAdmin) {
                         try {
                             await handleMessage(bot, msg);
                             // 获取所有交易对信息
@@ -272,7 +272,7 @@ bot.on("message", async (msg) => {
 
                 if (messageText === "显示操作人") {
                     const isAdmin = await checkifUserIsAdmin(bot, msg);
-                    if (isAdmin === 1) {
+                    if (isAdmin) {
                         try {
                             app.get('/group/:groupId/admins', async (req, res) => {
                                 const groupId = req.params.groupId;
@@ -467,7 +467,7 @@ bot.on("message", async (msg) => {
                     }
                 }
 
-                //进行数字输入计算 
+                //进行数字输入计算
                 if (messageText.startsWith("+") && !messageText.startsWith("设置")) {
                     const regex = /(-?\d+)(\/\d+(\.\d+)?)$/; // 修改捕获组
                     const match = messageText.match(regex);
@@ -546,7 +546,7 @@ bot.on("message", async (msg) => {
                         return;
                     }
                 }
-                //进行数字输入计算 
+                //进行数字输入计算
                 if (messageText.startsWith("-") && !messageText.startsWith("设置")) {
                     const regex = /(-?\d+)(\/\d+(\.\d+)?)$/; // 修改捕获组
                     const match = messageText.match(regex);
@@ -580,7 +580,7 @@ bot.on("message", async (msg) => {
                 try {
                     if (messageText === "删除账单") {
                         const isAdmin = await checkifUserIsAdmin(bot, msg);
-                        if (isAdmin === 1) {
+                        if (isAdmin) {
                             // bot.deleteMessage(chatId, messageId)
                             let s = Number(dailyTotalAmount);
                             dailyTotalAmount = (s).toFixed(2);
@@ -948,7 +948,7 @@ async function getTop10Rates(bot, msg, chatId) {
 
     if (messageText === "z0") {
         const isAdmin = await checkifUserIsAdmin(bot, msg);
-        if (isAdmin === 1) {
+        if (isAdmin) {
             try {
                 const response = await axios.get(apiUrl);
                 const data = response.data;

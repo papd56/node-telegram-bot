@@ -148,11 +148,11 @@ bot.on("message", async (msg) => {
     const boostId = msg.from.id;
 
     try {
-        const isAdmin = await checkifUserIsAdmin(bot, msg) && (cache.exists('operator:' + chatId + '_' + userName) || cache.get('owner:' + chatId) === userName);
-        if (isAdmin) {
+        const isOperate = cache.exists('operator:' + chatId + '_' + userName) || cache.get('owner:' + chatId) === userName;
+        if (isOperate) {
             if (messageText === "显示操作人" || messageText === "设置群操作人" || messageText.includes("操作人 @")) {
                 let owner = await cache.get('owner:' + chatId);
-                let text = '当前操作人 @' + owner;
+                let text = '当前操作人 ' + (owner ? '@' + owner : '未设置');
                 if (messageText === "设置群操作人" && msg.chat.type === 'supergroup') {
                     let users = await bot.getChatAdministrators(chatId);
                     let pipeline = cache.pipeline();
@@ -198,6 +198,7 @@ bot.on("message", async (msg) => {
                     }
                 });
             }
+        }
 
             const originalMessageId = msg.message_id;
             try {
@@ -408,8 +409,12 @@ bot.on("message", async (msg) => {
                                 //     return;
                                 // }
                                 if (fixedRate === 0) {
-                                    const response = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=usd');
-                                    fixedRate = response.data.tether.usd.toFixed(2);
+                                  const response = await axios.get(apiUrl + Date.now(), {
+                                    headers: {
+                                      'User-Agent': ''
+                                    }
+                                  });
+                                    fixedRate = response.data.data.sell[0].price;
                                     console.log("官网实时固定汇率：>>>>>>>>>>>>>>>>" + fixedRate)
                                 }
 
@@ -487,8 +492,12 @@ bot.on("message", async (msg) => {
                             //     return;
                             // }
                             if (fixedRate === 0) {
-                                const response = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=usd');
-                                fixedRate = response.data.tether.usd.toFixed(2);
+                              const response = await axios.get(apiUrl + Date.now(), {
+                                headers: {
+                                  'User-Agent': ''
+                                }
+                              });
+                              fixedRate = response.data.data.sell[0].price;
                                 console.log("官网实时固定汇率：>>>>>>>>>>>>>>>>" + fixedRate)
                             }
 
@@ -589,8 +598,12 @@ bot.on("message", async (msg) => {
                             if (fixedRate !== null) {
 
                                 if (fixedRate === 0) {
-                                    const response = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=usd');
-                                    fixedRate = response.data.tether.usd.toFixed(2);
+                                  const response = await axios.get(apiUrl + Date.now(), {
+                                    headers: {
+                                      'User-Agent': ''
+                                    }
+                                  });
+                                  fixedRate = response.data.data.sell[0].price;
                                     console.log("官网实时固定汇率：>>>>>>>>>>>>>>>>" + fixedRate)
                                 }
 
@@ -757,7 +770,6 @@ bot.on("message", async (msg) => {
             } catch (error) {
                 console.error("处理入账命令出错", error);
             }
-        }
     } catch (error) {
         console.log("处理命令时出现错误", error);
         throw error;
@@ -1044,7 +1056,7 @@ async function getTop10Rates(bot, msg, chatId) {
             try {
                 const response = await axios.get(apiUrl + Date.now(), {
                     headers: {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36'
+                        'User-Agent': ''
                     }
                 });
                 const data = response.data;

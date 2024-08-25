@@ -37,7 +37,7 @@ main(); */
 
 // redis缓存
 const cache = new Redis({
-  host: '127.0.0.1',
+  host: '47.76.223.250',
   port: 6379,
   db: 0,
   retryStrategy: (options) => {
@@ -90,7 +90,7 @@ const scanKeys = async (pattern) => {
   return keys;
 };
 
-const token = '7269675720:AAEEkkXm30WMsjR4ZWysHDPQTQeym0aUX-Y';
+const token = '7121880748:AAEP9zGTcYTyAeKv2u5k9PJkZdOZoS8f-eA';
 
 const bot = new TelegramBot(token, {
   polling: true,
@@ -144,7 +144,7 @@ bot.on('new_chat_members', async (msg) => {
         });
         let users = [];
         for (let member of newMembers) {
-          if (group && group.groupWelcome) {
+          if (group && group.groupWelcome && botInfo.id !== member.id) {
             let time = await cache.get('promote:消息自焚时间');
             time = JSON.parse(JSON.parse(time)).content;
             setTimeout(() => {

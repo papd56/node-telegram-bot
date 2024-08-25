@@ -1079,7 +1079,7 @@ async function getTop10Rates(bot, msg, chatId) {
                     const top10Rates = data.data.sell.sort((a, b) => parseFloat(b.last) - parseFloat(a.last)).slice(0, 10);
 
                     // 生成输出消息
-                    let output = '[欧易公群](https://t.me/oydbgq)   [欧易大群](https://t.me/oyguanfang)\n\n*OKX实时汇率top10*\n';
+                    let output = '[欧易公群](https://t.me/oydbgq)   [欧易大群](https://t.me/oyguanfang)\n\n*Okex商家实时交易汇率top10*\n';
                     top10Rates.forEach((item, index) => {
                         output += '`' + (index + 1) + ') ' + item.price + '   ' + item.nickName + '\n`';
                     });

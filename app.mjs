@@ -20,12 +20,13 @@ const bot = new TelegramBot(token, {
 //     password: 'Qwer1234..',
 //     database: 'ruoyi'
 // });
-const host = 'localhost';
+const host = '8.217.124.68';
 // redis缓存
 const cache = new Redis({
     host: host,
     port: 6379,
     db: 0,
+    password: 123456,
     retryStrategy: (options) => {
         if (options.error && options.error.code === 'ECONNREFUSED') {
             // Handle ECONNREFUSED differently
@@ -119,16 +120,16 @@ const headers = {
 
 let botInfo = await bot.getMe();
 bot.on('new_chat_members', async (msg) => {
-  if (msg && msg.new_chat_member.id === botInfo.id) {
-      cache.set('owner:' + msg.chat.id, msg.from.username);
-      bot.sendMessage(msg.chat.id, '感谢您把我添加到贵群！');
-  }
+    if (msg && msg.new_chat_member.id === botInfo.id) {
+        cache.set('owner:' + msg.chat.id, msg.from.username);
+        bot.sendMessage(msg.chat.id, '感谢您把我添加到贵群！');
+    }
 });
 
 bot.on("message", async (msg) => {
-  if (!msg || msg.new_chat_member || msg.left_chat_member) {
-    return;
-  }
+    if (!msg || msg.new_chat_member || msg.left_chat_member) {
+        return;
+    }
     // 将当前消息添加到缓存中
     messages.push(msg);
 
@@ -149,54 +150,54 @@ bot.on("message", async (msg) => {
     try {
         const isAdmin = await checkifUserIsAdmin(bot, msg) && (cache.exists('operator:' + chatId + '_' + userName) || cache.get('owner:' + chatId) === userName);
         if (isAdmin) {
-          if (messageText === "显示操作人" || messageText === "设置群操作人" || messageText.includes("操作人 @")) {
-            let owner = await cache.get('owner:' + chatId);
-            let text = '当前操作人 @' + owner;
-            if (messageText === "设置群操作人" && msg.chat.type === 'supergroup') {
-              let users = await bot.getChatAdministrators(chatId);
-              let pipeline = cache.pipeline();
-              for (let user of users) {
-                if (user.user.username !== owner) {
-                  pipeline.hset('operator:' + msg.chat.id, user.user.username, '');
+            if (messageText === "显示操作人" || messageText === "设置群操作人" || messageText.includes("操作人 @")) {
+                let owner = await cache.get('owner:' + chatId);
+                let text = '当前操作人 @' + owner;
+                if (messageText === "设置群操作人" && msg.chat.type === 'supergroup') {
+                    let users = await bot.getChatAdministrators(chatId);
+                    let pipeline = cache.pipeline();
+                    for (let user of users) {
+                        if (user.user.username !== owner) {
+                            pipeline.hset('operator:' + msg.chat.id, user.user.username, '');
+                        }
+                    }
+                    await pipeline.exec((error, replies) => {
+                        if (error) {
+                            console.error('pipeline error:' + error);
+                        } else {
+                            text = '添加操作人成功！' + text;
+                        }
+                    });
+                } else if (messageText.startsWith("设置操作人 @")) {
+                    let users = messageText.substring(7).split(' @');
+                    let pipeline = cache.pipeline();
+                    for (let user of users) {
+                        pipeline.hset('operator:' + msg.chat.id, user.trim(), '');
+                    }
+                    await pipeline.exec((error, replies) => {
+                        if (error) {
+                            console.error('pipeline error:' + error);
+                        } else {
+                            text = '添加操作人成功！' + text;
+                        }
+                    });
+                } else if (messageText.startsWith("删除操作人 @")) {
+                    await cache.hdel('operator:' + chatId, messageText.substring(7).split(' @'));
+                    text = '删除操作人成功！' + text;
                 }
-              }
-              await pipeline.exec((error, replies) => {
-                if (error) {
-                  console.error('pipeline error:' + error);
-                } else {
-                  text = '添加操作人成功！' + text;
-                }
-              });
-            }else if (messageText.startsWith("设置操作人 @")) {
-              let users = messageText.substring(7).split(' @');
-              let pipeline = cache.pipeline();
-              for (let user of users) {
-                pipeline.hset('operator:' + msg.chat.id, user.trim(), '');
-              }
-              await pipeline.exec((error, replies) => {
-                if (error) {
-                  console.error('pipeline error:' + error);
-                } else {
-                  text = '添加操作人成功！' + text;
-                }
-              });
-            }else if (messageText.startsWith("删除操作人 @")) {
-              await cache.hdel('operator:' + chatId, messageText.substring(7).split(' @'));
-              text = '删除操作人成功！' + text;
-            }
-            cache.hkeys('operator:' + chatId, async (error, fields) => {
-              if (error) {
-                console.error('Error fetching fields:', error);
-              } else {
-                for (let field of fields) {
-                  text += ' @' + field;
-                }
-                await bot.sendMessage(chatId, text, {
-                  reply_to_message_id: messageId,
+                cache.hkeys('operator:' + chatId, async (error, fields) => {
+                    if (error) {
+                        console.error('Error fetching fields:', error);
+                    } else {
+                        for (let field of fields) {
+                            text += ' @' + field;
+                        }
+                        await bot.sendMessage(chatId, text, {
+                            reply_to_message_id: messageId,
+                        });
+                    }
                 });
-              }
-            });
-          }
+            }
 
             const originalMessageId = msg.message_id;
             try {
@@ -435,17 +436,35 @@ bot.on("message", async (msg) => {
                                 // await handleIssueRecords(amountReceived, fixedRate);
                                 // const issueRecordsArr = myCache.get(inComingRecordKey);
                                 billingStyle = await sendRecordsToUser(incomingRecords);
+                                console.log("billingStyle" + billingStyle)
                                 issueRecords = await issueSendRecordsToUser(issueRecordsArr);
-                                await sendPymenTemplate(chatId,
-                                    dailyTotalAmount,
-                                    showldBeIssued,
-                                    issued,
-                                    unissued,
-                                    numberofEntries,
-                                    billingStyle,
-                                    issueRecords,
-                                    issueofEntries);
-                                return;
+                                if (billingStyle === undefined) {
+                                    console.log("进入")
+                                    await deleteBillTemplate(chatId,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0);
+                                    return;
+                                } else {
+                                    await sendPymenTemplate(chatId,
+                                        dailyTotalAmount,
+                                        showldBeIssued,
+                                        issued,
+                                        unissued,
+                                        numberofEntries,
+                                        billingStyle,
+                                        issueRecords,
+                                        issueofEntries);
+                                    return;
+                                }
+
                             } else {
                                 bot.sendMessage(chatId, "请先设置汇率!")
                             }
@@ -1023,9 +1042,11 @@ async function getTop10Rates(bot, msg, chatId) {
         const isAdmin = await checkifUserIsAdmin(bot, msg);
         if (isAdmin) {
             try {
-                const response = await axios.get(apiUrl+Date.now(),{headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36'
-                  }});
+                const response = await axios.get(apiUrl + Date.now(), {
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36'
+                    }
+                });
                 const data = response.data;
 
                 // 检查数据是否存在
@@ -1041,8 +1062,8 @@ async function getTop10Rates(bot, msg, chatId) {
 
                     // 发送结果
                     await bot.sendMessage(chatId, output, {
-                      parse_mode: 'Markdown',
-                      disable_web_page_preview: true
+                        parse_mode: 'Markdown',
+                        disable_web_page_preview: true
                     });
                 } else {
                     await bot.sendMessage(chatId, '无法获取数据，请稍后再试');
@@ -1157,17 +1178,17 @@ const maxReconnectAttempts = 5;
 const initialRetryDelay = 2000; // 2秒
 
 bot.on('polling_error', (error) => {
-  console.error('Polling error:', error);
-  reconnectAttempts++;
+    console.error('Polling error:', error);
+    reconnectAttempts++;
 
-  if (reconnectAttempts > maxReconnectAttempts) {
-    console.error('Maximum reconnect attempts reached, exiting...');
-  } else {
-    const retryDelay = initialRetryDelay * 2 ** (reconnectAttempts - 1);
-    console.log(`Retrying in ${retryDelay} milliseconds...`);
-    setTimeout(() => {
-      bot.startPolling();
-      reconnectAttempts = 0;
-    }, retryDelay);
-  }
+    if (reconnectAttempts > maxReconnectAttempts) {
+        console.error('Maximum reconnect attempts reached, exiting...');
+    } else {
+        const retryDelay = initialRetryDelay * 2 ** (reconnectAttempts - 1);
+        console.log(`Retrying in ${retryDelay} milliseconds...`);
+        setTimeout(() => {
+            bot.startPolling();
+            reconnectAttempts = 0;
+        }, retryDelay);
+    }
 });

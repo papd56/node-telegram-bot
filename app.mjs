@@ -20,13 +20,12 @@ const bot = new TelegramBot(token, {
 //     password: 'Qwer1234..',
 //     database: 'ruoyi'
 // });
-const host = '8.217.124.68';
+const host = 'localhost';
 // redis缓存
 const cache = new Redis({
     host: host,
     port: 6379,
     db: 0,
-    password: 123456,
     retryStrategy: (options) => {
         if (options.error && options.error.code === 'ECONNREFUSED') {
             // Handle ECONNREFUSED differently
@@ -72,7 +71,7 @@ const incomingRecords = [];
 const billingStyleZeroRecords = [];
 const issueRecordsArr = [];
 // 替换成OKEx的API接口地址
-const apiUrl = 'https://www.okx.com/api/v5/market/tickers?instType=SPOT';
+const apiUrl = 'https://www.okx.com/v3/c2c/tradingOrders/books?quoteCurrency=CNY&baseCurrency=USDT&side=sell&paymentMethod=all&userType=all&receivingAds=false&t=';
 
 // OKEx 公共接口 URL (请根据 OKEx 官方文档更新)
 const baseUrl = 'https://www.okx.com/api/v5/market/';
@@ -118,7 +117,18 @@ const headers = {
     // ... 其他需要的头部信息，根据OKEx API文档
 };
 
+let botInfo = await bot.getMe();
+bot.on('new_chat_members', async (msg) => {
+  if (msg && msg.new_chat_member.id === botInfo.id) {
+      cache.set('owner:' + msg.chat.id, msg.from.username);
+      bot.sendMessage(msg.chat.id, '感谢您把我添加到贵群！');
+  }
+});
+
 bot.on("message", async (msg) => {
+  if (!msg || msg.new_chat_member || msg.left_chat_member) {
+    return;
+  }
     // 将当前消息添加到缓存中
     messages.push(msg);
 
@@ -129,6 +139,7 @@ bot.on("message", async (msg) => {
     // 获取上一条消息
     const previousMessage = messages[messages.length - 2];
     const userId = msg.from.id;
+    const userName = msg.from.username;
     let replyUserId = userId;
     const chatId = msg.chat.id;
     const messageText = msg.text;
@@ -136,8 +147,57 @@ bot.on("message", async (msg) => {
     const boostId = msg.from.id;
 
     try {
-        const isAdmin = await checkifUserIsAdmin(bot, msg);
+        const isAdmin = await checkifUserIsAdmin(bot, msg) && (cache.exists('operator:' + chatId + '_' + userName) || cache.get('owner:' + chatId) === userName);
         if (isAdmin) {
+          if (messageText === "显示操作人" || messageText === "设置群操作人" || messageText.includes("操作人 @")) {
+            let owner = await cache.get('owner:' + chatId);
+            let text = '当前操作人 @' + owner;
+            if (messageText === "设置群操作人" && msg.chat.type === 'supergroup') {
+              let users = await bot.getChatAdministrators(chatId);
+              let pipeline = cache.pipeline();
+              for (let user of users) {
+                if (user.user.username !== owner) {
+                  pipeline.hset('operator:' + msg.chat.id, user.user.username, '');
+                }
+              }
+              await pipeline.exec((error, replies) => {
+                if (error) {
+                  console.error('pipeline error:' + error);
+                } else {
+                  text = '添加操作人成功！' + text;
+                }
+              });
+            }else if (messageText.startsWith("设置操作人 @")) {
+              let users = messageText.substring(7).split(' @');
+              let pipeline = cache.pipeline();
+              for (let user of users) {
+                pipeline.hset('operator:' + msg.chat.id, user.trim(), '');
+              }
+              await pipeline.exec((error, replies) => {
+                if (error) {
+                  console.error('pipeline error:' + error);
+                } else {
+                  text = '添加操作人成功！' + text;
+                }
+              });
+            }else if (messageText.startsWith("删除操作人 @")) {
+              await cache.hdel('operator:' + chatId, messageText.substring(7).split(' @'));
+              text = '删除操作人成功！' + text;
+            }
+            cache.hkeys('operator:' + chatId, async (error, fields) => {
+              if (error) {
+                console.error('Error fetching fields:', error);
+              } else {
+                for (let field of fields) {
+                  text += ' @' + field;
+                }
+                await bot.sendMessage(chatId, text, {
+                  reply_to_message_id: messageId,
+                });
+              }
+            });
+          }
+
             const originalMessageId = msg.message_id;
             try {
                 if (messageText.startsWith("设置汇率")) {
@@ -963,22 +1023,27 @@ async function getTop10Rates(bot, msg, chatId) {
         const isAdmin = await checkifUserIsAdmin(bot, msg);
         if (isAdmin) {
             try {
-                const response = await axios.get(apiUrl);
+                const response = await axios.get(apiUrl+Date.now(),{headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36'
+                  }});
                 const data = response.data;
 
                 // 检查数据是否存在
                 if (data && data.data) {
                     // 按价格排序并获取前10名
-                    const top10Rates = data.data.sort((a, b) => parseFloat(b.last) - parseFloat(a.last)).slice(0, 10);
+                    const top10Rates = data.data.sell.sort((a, b) => parseFloat(b.last) - parseFloat(a.last)).slice(0, 10);
 
                     // 生成输出消息
-                    let output = 'OKX 排行榜前十的币种汇率top10:\n';
+                    let output = '[欧易公群](https://t.me/oydbgq)   [欧易大群](https://t.me/oyguanfang)\n\n*OKX实时汇率top10*\n';
                     top10Rates.forEach((item, index) => {
-                        output += `${index + 1}. ${item.instId}: $${item.last}\n`;
+                        output += '`' + (index + 1) + ') ' + item.price + '   ' + item.nickName + '\n`';
                     });
 
                     // 发送结果
-                    await bot.sendMessage(chatId, output);
+                    await bot.sendMessage(chatId, output, {
+                      parse_mode: 'Markdown',
+                      disable_web_page_preview: true
+                    });
                 } else {
                     await bot.sendMessage(chatId, '无法获取数据，请稍后再试');
                 }
@@ -1086,3 +1151,23 @@ async function getTop10Tickers() {
         console.error('Error fetching market data:', error.message);
     }
 }
+
+let reconnectAttempts = 0;
+const maxReconnectAttempts = 5;
+const initialRetryDelay = 2000; // 2秒
+
+bot.on('polling_error', (error) => {
+  console.error('Polling error:', error);
+  reconnectAttempts++;
+
+  if (reconnectAttempts > maxReconnectAttempts) {
+    console.error('Maximum reconnect attempts reached, exiting...');
+  } else {
+    const retryDelay = initialRetryDelay * 2 ** (reconnectAttempts - 1);
+    console.log(`Retrying in ${retryDelay} milliseconds...`);
+    setTimeout(() => {
+      bot.startPolling();
+      reconnectAttempts = 0;
+    }, retryDelay);
+  }
+});

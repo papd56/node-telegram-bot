@@ -506,3 +506,23 @@ bot.on('message', async (msg) => {
     }
   }
 });
+
+let reconnectAttempts = 0;
+const maxReconnectAttempts = 5;
+const initialRetryDelay = 2000; // 2秒
+
+bot.on('polling_error', (error) => {
+  console.error('Polling error:', error);
+  reconnectAttempts++;
+
+  if (reconnectAttempts > maxReconnectAttempts) {
+    console.error('Maximum reconnect attempts reached, exiting...');
+  } else {
+    const retryDelay = initialRetryDelay * 2 ** (reconnectAttempts - 1);
+    console.log(`Retrying in ${retryDelay} milliseconds...`);
+    setTimeout(() => {
+      bot.startPolling();
+      reconnectAttempts = 0;
+    }, retryDelay);
+  }
+});

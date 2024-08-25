@@ -149,7 +149,7 @@ bot.on("message", async (msg) => {
 
     try {
         const isOperate = cache.exists('operator:' + chatId + '_' + userName) || cache.get('owner:' + chatId) === userName;
-        if (isOperate) {
+        if (isOperate && messageText) {
             if (messageText === "显示操作人" || messageText === "设置群操作人" || messageText.includes("操作人 @")) {
                 let owner = await cache.get('owner:' + chatId);
                 let text = '当前操作人 ' + (owner ? '@' + owner : '未设置');
@@ -255,8 +255,12 @@ bot.on("message", async (msg) => {
                             //     return;
                             // }
                             if (fixedRate === 0) {
-                                const response = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=usd');
-                                fixedRate = response.data.tether.usd.toFixed(2);
+                              const response = await axios.get(apiUrl + Date.now(), {
+                                headers: {
+                                  'User-Agent': ''
+                                }
+                              });
+                              fixedRate = response.data.data.sell[0].price;
                             }
                             showldBeIssued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
 
@@ -688,8 +692,12 @@ bot.on("message", async (msg) => {
                             dailyTotalAmount = (s).toFixed(2);
 
                             if (fixedRate === 0) {
-                                const response = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=usd');
-                                fixedRate = response.data.tether.usd.toFixed(2);
+                              const response = await axios.get(apiUrl + Date.now(), {
+                                headers: {
+                                  'User-Agent': ''
+                                }
+                              });
+                              fixedRate = response.data.data.sell[0].price;
                             }
 
                             showldBeIssued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
@@ -736,8 +744,12 @@ bot.on("message", async (msg) => {
                     // }
 
                     if (fixedRate === 0) {
-                        const response = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=usd');
-                        fixedRate = response.data.tether.usd.toFixed(2);
+                      const response = await axios.get(apiUrl + Date.now(), {
+                        headers: {
+                          'User-Agent': ''
+                        }
+                      });
+                      fixedRate = response.data.data.sell[0].price;
                     }
 
                     showldBeIssued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
@@ -798,7 +810,7 @@ function deleteBillTemplate(chatId,
     };
 
     const message = `
-    <a href="https://t.me/@Guik88">518</a>
+    <a href="https://t.me/oydbgq">欧易公群</a>  <a href="https://t.me/oyguanfang">欧易大群</a>
     已入款(${numberofEntries})笔:
      暂无入款
     已下发(${issueofEntries})笔:
@@ -840,11 +852,11 @@ function sendPymenTemplate(chatId,
     };
 
     const message = `
-    <a href="https://t.me/@Guik88">518</a>
+    <a href="https://t.me/oydbgq">欧易公群</a>  <a href="https://t.me/oyguanfang">欧易大群</a>
     已入款(${numberofEntries})笔:
-    ${billingStyle.join('\n')}
+    ${billingStyle.join('\n    ')}\n
     已下发(${issueofEntries})笔:
-    ${issueRecords.join('\n')}
+    ${issueRecords.join('\n    ')}
     总入款总金额: ${dailyTotalAmount}
     费率: ${rate}
     实时汇率: ${fixedRate}
@@ -882,7 +894,7 @@ function sendPymenTemplateAddZero(chatId,
     };
 
     const message = `
-    <a href="https://t.me/@Guik88">518</a>
+    <a href="https://t.me/oydbgq">欧易公群</a>  <a href="https://t.me/oyguanfang">欧易大群</a>
     已入款(${numberofEntries})笔:
     已下发(${issueofEntries})笔:
     总入款总金额: ${dailyTotalAmount}

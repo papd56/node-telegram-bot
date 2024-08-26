@@ -36,10 +36,12 @@ await fetchData('/redisCache/list', '');
 main(); */
 
 // redis缓存
+const host = '8.217.124.68';
 const cache = new Redis({
-  host: '127.0.0.1',
+  host: host,
   port: 6379,
   db: 0,
+  password: 123456,
   retryStrategy: (options) => {
     if (options.error && options.error.code === 'ECONNREFUSED') {
       // Handle ECONNREFUSED differently

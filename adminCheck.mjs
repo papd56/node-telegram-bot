@@ -19,9 +19,10 @@ export default async function checkIfUserIsAdmin(bot, msg) {
       return false;
     }
   } catch (error) {
-    console.error('获取成员信息出错：', error);
     if (error.message.includes('supergroup')) {
       console.error('该群组已经升级为超级群组，请使用超级群组相关的 API');
+      const members = await bot.getChatAdministrators(chatId);
+      return members.some(member => member.user.id === userId);
     }
   }
 }

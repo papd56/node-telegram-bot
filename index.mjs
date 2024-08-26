@@ -7,7 +7,7 @@ import checkifUserIsAdmin from './adminCheck.mjs';
 async function fetchData(path, data) {
   let options = {
     hostname: 'localhost',
-    port: 8897,
+    port: 8899,
     path: path,
     method: 'POST',
     headers: {
@@ -37,9 +37,10 @@ main(); */
 
 // redis缓存
 const cache = new Redis({
-  host: '47.76.223.250',
-  port: 6379,
+  host: 'localhost',
+  port: 6380,
   db: 0,
+  password: 123456,
   retryStrategy: (options) => {
     if (options.error && options.error.code === 'ECONNREFUSED') {
       // Handle ECONNREFUSED differently
@@ -215,8 +216,9 @@ bot.on('message', async (msg) => {
           let now = Date.now();
           let time = await cache.get('time:' + chatId + '_' + messageText);
           if (time === null || now - time >= 300000) {
-            await sendMessage(chatId, messageId, messageText);
-            await cache.set('time:' + chatId + '_' + messageText, now);
+            await sendMessage(chatId, messageId, messageText).then( async () => {
+              await cache.set('time:' + chatId + '_' + messageText, now);
+            });
           }
         }
         let admin = await cache.exists('admin:' + userId);
@@ -385,7 +387,7 @@ bot.on('message', async (msg) => {
                   await sendMessage(chatId, messageId, '移除管理');
                 }
 
-                if (messageText.startsWith('设置欢迎语')) {
+                if (messageText.startsWith('设置欢迎语') && messageText.length > 5) {
                   let group = await cache.get('group:' + chatId);
                   group = JSON.parse(JSON.parse(group));
                   group.groupWelcome = messageText.substring(5);

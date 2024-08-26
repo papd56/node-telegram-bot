@@ -1,11 +1,10 @@
 import TelegramBot from 'node-telegram-bot-api';
-import checkifUserIsAdmin from "./adminCheck.mjs"
-import { DateTime } from "luxon";
+import checkifUserIsAdmin from './adminCheck.mjs';
+import { DateTime } from 'luxon';
 import Redis from 'ioredis';
 import axios from 'axios';
-import NodeCache from 'node-cache';
-import mysql from 'mysql2';
 import express from 'express';
+
 const app = express();
 const token = "7237081474:AAGsSnjPvvr1RLOgdrQjA9XNl-JrV0bQ-5o";
 const bot = new TelegramBot(token, {
@@ -986,7 +985,7 @@ async function sendRecordsToUser(records) {
     }
     // 如果数组长度超过 3，则删除最旧的数据
     if (recordsArr.length > 3) {
-        recordsArr = recordsArr.slice(0, 3);
+        recordsArr = recordsArr.slice(-3);
     }
     return recordsArr;
 }
@@ -995,12 +994,11 @@ async function issueSendRecordsToUser(records) {
     let issSueArr = [];
     let text = "";
     for (const incomingRecord of records) {
-        const formattedRecord = await issueFormatRecordText(incomingRecord);
-        text = formattedRecord;
+      text = await issueFormatRecordText(incomingRecord);
         issSueArr.unshift(text);
     }
     if (issSueArr.length > 3) {
-        issSueArr = issSueArr.slice(0, 3);
+        issSueArr = issSueArr.slice(-3);
     }
     return issSueArr;
 }

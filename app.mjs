@@ -979,8 +979,7 @@ async function sendRecordsToUser(records) {
         return;
     }
     for (const incomingRecord of records) {
-        const formattedRecord = await formatRecordText(incomingRecord);
-        text = formattedRecord;
+      text = await formatRecordText(incomingRecord);
         recordsArr.unshift(text);
     }
     // 如果数组长度超过 3，则删除最旧的数据
@@ -994,7 +993,8 @@ async function issueSendRecordsToUser(records) {
     let issSueArr = [];
     let text = "";
     for (const incomingRecord of records) {
-      text = await issueFormatRecordText(incomingRecord);
+        const formattedRecord = await issueFormatRecordText(incomingRecord);
+        text = formattedRecord;
         issSueArr.unshift(text);
     }
     if (issSueArr.length > 3) {

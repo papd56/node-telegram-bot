@@ -4,37 +4,6 @@ import http from 'http';
 import { DateTime } from 'luxon';
 import checkifUserIsAdmin from './adminCheck.mjs';
 
-async function fetchData(path, data) {
-  let options = {
-    hostname: '8.217.124.68',
-    port: 8897,
-    path: path,
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  };
-  let req = http.request(options, (res) => {
-    // 不处理响应数据
-  });
-  req.on('error', (error) => {
-    console.error(error);
-  });
-  req.write(data);
-  req.end();
-}
-
-await fetchData('/redisCache/list', '');
-/* async function main() {
-  try {
-    const promoteList = await fetchData('/bot/promote/promoteList');
-    const userList = await fetchData('/bot/user/userList');
-  } catch (error) {
-    console.error(error);
-  }
-}
-main(); */
-
 // redis缓存
 const host = '8.217.124.68';
 const cache = new Redis({
@@ -198,21 +167,10 @@ bot.on('message', async (msg) => {
                     '⚠️请供需双方确定一下各方负责人，以后是否下押以及下押到哪，需要交易详情上的供需双方负责人确认，决定权在负责人手里，本群为私群，只能对应一个供方负责人和一个需方负责人。请不要拉无关人员进群，谁拉进来的人谁负责。人进齐后请通知交易员锁群').then();
                 });
               });
-
-              if (messageText.startsWith('我是供方')) {
-                await bot.sendMessage(chatId, '供方负责人', {
-                  reply_to_message_id: messageId,
-                });
-                await bot.sendMessage(chatId, '供方负责人设置完成');
-              }
-
-              if (messageText.startsWith('我是需方')) {
-                await bot.sendMessage(chatId, '需方负责人', {
-                  reply_to_message_id: messageId,
-                });
-                await bot.sendMessage(chatId, '需方负责人设置完成');
-              }
-
+            }else if (messageText.startsWith('需方负责人')) {
+              await bot.sendMessage(chatId, '需方负责人设置完成');
+            }else if (messageText.startsWith('供方负责人')) {
+              await bot.sendMessage(chatId, '供方负责人设置完成');
             }
           }
         } else {

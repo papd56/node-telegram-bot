@@ -124,10 +124,10 @@ bot.on('new_chat_members', async (msg) => {
         groupName: msg.chat.title
       };
       await fetchData('/bot/group/addGroup', JSON.stringify(group));
-    }else {
+    } else {
       const newMembers = msg.new_chat_members;
       // await fetchData('/bot/user/addUsers', newMembers);
-      let group = await cache.get('group:'+chatId);
+      let group = await cache.get('group:' + chatId);
       if (group && group.groupWelcome) {
         group = JSON.parse(JSON.parse(group));
         let value1 = await cache.get('promote:群组欢迎语按钮1');
@@ -164,7 +164,7 @@ bot.on('new_chat_members', async (msg) => {
           }
         }
         await fetchData('/bot/user/addUsers', JSON.stringify(users));
-      }else {
+      } else {
         let users = [];
         for (let member of newMembers) {
           let flag = await cache.exists('user:' + member.username);
@@ -222,19 +222,6 @@ bot.on('message', async (msg) => {
           }
         }
         let admin = await cache.exists('admin:' + userId);
-        if (admin) {
-          if (messageText === '开启权限') {
-            await bot.promoteChatMember(chatId, userId, {
-              can_change_info: true,        // 修改群组信息
-              can_delete_messages: true,    // 删除信息
-              can_restrict_members: true,   // 封禁成员
-              can_invite_users: true,       // 添加成员
-              can_pin_messages: true,       // 置顶消息
-              can_promote_members: true     // 添加管理员
-            });
-            await sendMessage(chatId, messageId, messageText);
-          }
-        }
         let isAdmin = await checkifUserIsAdmin(bot, msg);
         if (isAdmin) {
           if (messageText) {
@@ -246,8 +233,27 @@ bot.on('message', async (msg) => {
 
             if (messageText === '初始化') {
               //专群初始化
-              bot.sendMessage(chatId, "初始化成功!")
-              bot.sendMessage(chatId, "初始化完成 该群是真群!")
+              await bot.sendMessage(chatId, '初始化成功');
+              await bot.sendMessage(chatId, '初始化完成 该群是真群');
+              await bot.sendMessage(chatId, '您好，请先描述一下具体交易内容跟规则，交易员稍后将汇总编辑成交易详情给交易双方确认，然后开始交易。\n' +
+                '交易过程中为了避免不必要的纠纷，请按照我们的流程和步骤进行，感谢各位配合！\n' +
+                '担保流程：@dbliucheng   \n' +
+                '安全防范：@HuioneAQ\n' +
+                '汇旺担保核心群  @daqun 还没加群的老板可以加一下，有什么不清楚的地方可以随时问本群交易员\n' +
+                '\n' +
+                '⚠️进群后请认准群内官方人员的管理员身份，不是官方管理员身份发的上押地址，都是假冒的骗子，切勿相信！群内交易详情未确认，押金未核实到账，禁止交易，否则造成损失，自行承担责任，平台概不负责。\n' +
+                '\n' +
+                '⚠️汇旺担保工作人员作息时间：🕙早上上班时间：北京时间9点！  🕙晚上下班时间：北京时间3点！\n' +
+                '\n' +
+                '⚠️专群担保交易为一对一交易，所有交易记录需要在担保群内体现出来，禁止交易双方私下拉群交易，私下拉群交易不在本群担保范围内，特殊事项请联系本群交易员对接。\n' +
+                '\n' +
+                '温馨提示：\n' +
+                '1、交易方进交易群后，可以先上押再谈交易内容、规则。一个上押下押周期内，佣金不足20u的，以20u结算扣除手续费，上押前请交易双方务必斟酌好，是否已经协商交易内容规则。\n' +
+                '2、即日起，凡是车队（跑分、代收代付）专群跑分类交易开群上押要求必须上押800u起，普通交易不限制最低上押金额。\n' +
+                '3、请尽量使用冷钱包上押,不要用交易所直接提u上押,使用交易所提u上押的请上押时候说明是交易所提的u,并同时说明下押地址。\n' +
+                '4、由于群资源紧张，如本群当天无上押，即被回收；后续如需交易，请联系 @hwdb (https://t.me/hwdbwbot) 开新群。\n' +
+                '\n' +
+                '⚠️请供需双方确定一下各方负责人，以后是否下押以及下押到哪，需要交易详情上的供需双方负责人确认，决定权在负责人手里，本群为私群，只能对应一个供方负责人和一个需方负责人。请不要拉无关人员进群，谁拉进来的人谁负责。人进齐后请通知交易员锁群');
             }
 
             if (messageText === '下课') {
@@ -256,6 +262,19 @@ bot.on('message', async (msg) => {
               await sendMessage(chatId, messageId, messageText);
             }
 
+            if (messageText.startsWith('我是供方')) {
+              await bot.sendMessage(chatId, '供方负责人', {
+                reply_to_message_id: messageId,
+              });
+              await bot.sendMessage(chatId, '供方负责人设置完成');
+            }
+
+            if (messageText.startsWith('我是需方')) {
+              await bot.sendMessage(chatId, '需方负责人', {
+                reply_to_message_id: messageId,
+              });
+              await bot.sendMessage(chatId, '需方负责人设置完成');
+            }
             if (admin) {
               if (replyMessage) {
                 if (messageText === '删除') {
@@ -326,7 +345,7 @@ bot.on('message', async (msg) => {
                 if (messageText.startsWith('禁言 @')) {
                   let users = messageText.substring(4).split('@');
                   for (let user of users) {
-                    user =  await cache.get('user:' + user.trim());
+                    user = await cache.get('user:' + user.trim());
                     await bot.restrictChatMember(chatId, JSON.parse(JSON.parse(user)).userId, {
                       until_date: 86400,
                       can_send_messages: false
@@ -338,7 +357,7 @@ bot.on('message', async (msg) => {
                 if (messageText.startsWith('踢出 @')) {
                   let users = messageText.substring(4).split('@');
                   for (let user of users) {
-                    user =  await cache.get('user:' + user.trim());
+                    user = await cache.get('user:' + user.trim());
                     await bot.banChatMember(chatId, JSON.parse(JSON.parse(user)).userId);
                   }
                   await sendMessage(chatId, messageId, '踢出');
@@ -380,7 +399,7 @@ bot.on('message', async (msg) => {
                 if (messageText.startsWith('移除管理 @')) {
                   let users = messageText.substring(6).split('@');
                   for (let user of users) {
-                    user =  await cache.get('user:' + user.trim());
+                    user = await cache.get('user:' + user.trim());
                     await bot.promoteChatMember(chatId, JSON.parse(JSON.parse(user)).userId, {
                       can_change_info: false,        // 修改群组信息
                       can_delete_messages: false,    // 删除信息

@@ -6,7 +6,7 @@ import checkifUserIsAdmin from './adminCheck.mjs';
 
 async function fetchData(path, data) {
   let options = {
-    hostname: 'localhost',
+    hostname: '8.217.124.68',
     port: 8897,
     path: path,
     method: 'POST',
@@ -242,6 +242,12 @@ bot.on('message', async (msg) => {
               //群已开  发送消息 发送图片
               await bot.setChatPermissions(chatId, newPermissions);
               await sendMessage(chatId, messageId, messageText);
+            }
+
+            if (messageText === '初始化') {
+              //专群初始化
+              bot.sendMessage(chatId, "初始化成功!")
+              bot.sendMessage(chatId, "初始化完成 该群是真群!")
             }
 
             if (messageText === '下课') {

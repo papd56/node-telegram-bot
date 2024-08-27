@@ -533,7 +533,10 @@ bot.on("message", async (msg) => {
                                 numberofEntries,
                                 billingStyleZero,
                                 issueRecords,
-                                issueofEntries);
+                                issueofEntries,
+                                showldBeIssuedRmb,
+                                issuedRmb,
+                                unissuedRmb);
                             return;
                         } else {
                             numberofEntries += 1;
@@ -558,7 +561,10 @@ bot.on("message", async (msg) => {
                                 numberofEntries,
                                 billingStyle,
                                 issueRecords,
-                                issueofEntries);
+                                issueofEntries,
+                                showldBeIssuedRmb,
+                                issuedRmb,
+                                unissuedRmb);
                             return;
                         }
 
@@ -839,7 +845,10 @@ function sendPymenTemplate(chatId,
     numberofEntries,
     billingStyle,
     issueRecords,
-    issueofEntries) {
+    issueofEntries,
+    showldBeIssuedRmb,
+    issuedRmb,
+    unissuedRmb) {
     const keyboard = {
         inline_keyboard: [
             [
@@ -859,9 +868,9 @@ function sendPymenTemplate(chatId,
     总入款总金额: ${dailyTotalAmount}
     费率: ${rate}
     实时汇率: ${fixedRate}
-    应下发: ${showldBeIssued} (USDT)
-    已下发: ${issued} (USDT)
-    未下发: ${unissued} (USDT)
+    应下发: ${showldBeIssuedRmb} | ${showldBeIssued} (USDT)
+    已下发: ${issuedRmb} | ${issued} (USDT)
+    未下发: ${unissuedRmb} | ${unissued} (USDT)
 `;
     bot.sendMessage(chatId, message, {
         parse_mode: "HTML",
@@ -979,7 +988,7 @@ async function sendRecordsToUser(records) {
         return;
     }
     for (const incomingRecord of records) {
-      text = await formatRecordText(incomingRecord);
+        text = await formatRecordText(incomingRecord);
         recordsArr.unshift(text);
     }
     // 如果数组长度超过 3，则删除最旧的数据

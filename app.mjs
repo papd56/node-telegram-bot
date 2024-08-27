@@ -6,7 +6,7 @@ import axios from 'axios';
 import express from 'express';
 
 const app = express();
-const token = "7237081474:AAGsSnjPvvr1RLOgdrQjA9XNl-JrV0bQ-5o";
+const token = '7237081474:AAGsSnjPvvr1RLOgdrQjA9XNl-JrV0bQ-5o';
 const bot = new TelegramBot(token, {
     polling: true,
 });
@@ -77,14 +77,9 @@ const baseUrl = 'https://www.okx.com/api/v5/market/';
 
 // 假设 messages 是一个数组，用来存储最近的几条消息
 let messages = [];
-//今日交易数据
-let todayTransaction = [];
-//下发今日交易数据
-let issueTodayTransaction = [];
 let issueRecords = [];
 let billingStyle = [];
 let billingStyleZero = [];
-let outIssyedStyle = [];
 let newRecords = [];
 
 
@@ -104,17 +99,11 @@ let issuedRmb = 0.00; //已下发金额rmb
 let unissued = 0.00; //未下发金额
 let unissuedRmb = 0.00; //未下发金额Rmb
 
-
-// 替换为你的 OKEx API 密钥和密钥秘钥
-const apiKey = '56b9768f-1b05-4225-b3b9-ae1e29afe22d';
-const secretKey = '2A178FE570AD0E75A3C7679B07681C55';
-
-
 // 构造请求头
 const headers = {
     'Content-Type': 'application/json',
-    'OK-ACCESS-KEY': "56b9768f-1b05-4225-b3b9-ae1e29afe22d",
-    'OK-ACCESS-PASSPHRASE': "Asdzxc1230.",
+    'OK-ACCESS-KEY': '56b9768f-1b05-4225-b3b9-ae1e29afe22d',
+    'OK-ACCESS-PASSPHRASE': 'Asdzxc1230.',
     'OK-ACCESS-TIMESTAMP': Date.now() / 1000
     // ... 其他需要的头部信息，根据OKEx API文档
 };
@@ -127,7 +116,7 @@ bot.on('new_chat_members', async (msg) => {
     }
 });
 
-bot.on("message", async (msg) => {
+bot.on('message', async (msg) => {
     if (!msg || msg.new_chat_member || msg.left_chat_member) {
         return;
     }
@@ -151,10 +140,10 @@ bot.on("message", async (msg) => {
     try {
         const isOperate = cache.exists('operator:' + chatId + '_' + userName) || cache.get('owner:' + chatId) === userName;
         if (isOperate && messageText) {
-            if (messageText === "显示操作人" || messageText === "设置群操作人" || messageText.includes("操作人 @")) {
+            if (messageText === '显示操作人' || messageText === '设置群操作人' || messageText.includes('操作人 @')) {
                 let owner = await cache.get('owner:' + chatId);
                 let text = '当前操作人 ' + (owner ? '@' + owner : '未设置');
-                if (messageText === "设置群操作人" && msg.chat.type === 'supergroup') {
+                if (messageText === '设置群操作人' && msg.chat.type === 'supergroup') {
                     let users = await bot.getChatAdministrators(chatId);
                     let pipeline = cache.pipeline();
                     for (let user of users) {
@@ -169,7 +158,7 @@ bot.on("message", async (msg) => {
                             text = '添加操作人成功！' + text;
                         }
                     });
-                } else if (messageText.startsWith("设置操作人 @")) {
+                } else if (messageText.startsWith('设置操作人 @')) {
                     let users = messageText.substring(7).split(' @');
                     let pipeline = cache.pipeline();
                     for (let user of users) {
@@ -182,7 +171,7 @@ bot.on("message", async (msg) => {
                             text = '添加操作人成功！' + text;
                         }
                     });
-                } else if (messageText.startsWith("删除操作人 @")) {
+                } else if (messageText.startsWith('删除操作人 @')) {
                     await cache.hdel('operator:' + chatId, messageText.substring(7).split(' @'));
                     text = '删除操作人成功！' + text;
                 }
@@ -203,42 +192,42 @@ bot.on("message", async (msg) => {
 
         const originalMessageId = msg.message_id;
         try {
-            if (messageText.startsWith("设置汇率")) {
+            if (messageText.startsWith('设置汇率')) {
                 const numberMatch = messageText.match(/(\d+(\.\d{1,2})?)/);
                 if (numberMatch) {
                     let num = Number(numberMatch[0]);
                     fixedRate = parseFloat(num.toFixed(2));
                     // fixedRate = Number(numberMatch[0]).toFixed(2);
 
-                    console.log("保留2位小数", fixedRate);
-                    bot.sendMessage(chatId, "汇率设置成功! 当前汇率: " + fixedRate, {
+                    console.log('保留2位小数', fixedRate);
+                    bot.sendMessage(chatId, '汇率设置成功! 当前汇率: ' + fixedRate, {
                         reply_to_message_id: originalMessageId,
                     });
                 } else {
-                    console.log("消息中没用匹配数据");
+                    console.log('消息中没用匹配数据');
                 }
             }
         } catch (error) {
-            console.error("判断管理员权限出现错误");
+            console.error('判断管理员权限出现错误');
         }
 
         try {
-            if (messageText.startsWith("设置费率")) {
+            if (messageText.startsWith('设置费率')) {
                 const numberRate = messageText.match(/(-?\d+(\.\d{1,2})?)/);
                 if (numberRate) {
                     let num = Number(numberRate[0]);
                     rate = parseFloat(num.toFixed(2));
                     // rate = Number(numberRate[0]).toFixed(2);
-                    bot.sendMessage(chatId, "费率设置成功！当前费率：" + rate, {
+                    bot.sendMessage(chatId, '费率设置成功！当前费率：' + rate, {
                         reply_to_message_id: originalMessageId,
                     });
                 }
             }
         } catch (error) {
-            console.error("处理费率命令出现错误：", error);
+            console.error('处理费率命令出现错误：', error);
         }
         try {
-            if (messageText.startsWith("下发")) {
+            if (messageText.startsWith('下发')) {
                 const numberMatch = messageText.match(/(\d+(\.\d{1,2})?)/);
                 if (numberMatch) {
                     let num = Number(numberMatch[0]);
@@ -296,7 +285,7 @@ bot.on("message", async (msg) => {
                             unissuedRmb);
 
                     } else {
-                        bot.sendMessage(chatId, "请先设置汇率!")
+                        bot.sendMessage(chatId, '请先设置汇率!');
                     }
                 }
             }
@@ -325,7 +314,7 @@ bot.on("message", async (msg) => {
                 await sendMessage(chatId, messageId, '踢出');
             }
 
-            if (messageText === "z0") {
+            if (messageText === 'z0') {
                 const isAdmin = await checkifUserIsAdmin(bot, msg);
                 if (isAdmin) {
                     try {
@@ -341,7 +330,7 @@ bot.on("message", async (msg) => {
                 }
             }
 
-            if (messageText === "显示操作人") {
+            if (messageText === '显示操作人') {
                 const isAdmin = await checkifUserIsAdmin(bot, msg);
                 if (isAdmin) {
                     try {
@@ -382,25 +371,35 @@ bot.on("message", async (msg) => {
                 }
             }
 
-            if (messageText === "开始记账") {
-                bot.sendMessage(chatId, "记账功能开始工作");
+            if (messageText === '开始记账') {
+                bot.sendMessage(chatId, '记账功能开始工作');
             }
 
-            if (messageText === "+0") {
-                if (previousMessage.text === "删除账单") {
+            if (messageText === '+0') {
+                if (previousMessage.text === '删除账单') {
+                    //初始化数组默认值为0
+                    billingStyle = Array.from({ length: 1 }, () => 0);
+                    issueRecords = Array.from({ length: 1 }, () => 0);
+                    dailyTotalAmount = 0;
+                    showldBeIssued = 0;
+                    issued = 0;
+                    unissued = 0;
                     numberofEntries = 0;
                     issueofEntries = 0;
+                    showldBeIssuedRmb = 0;
+                    issuedRmb = 0;
+                    unissuedRmb = 0;
                     await deleteBillTemplate(chatId,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0);
+                        dailyTotalAmount,
+                        showldBeIssued,
+                        issued,
+                        unissued,
+                        numberofEntries,
+                        issueofEntries,
+                        billingStyle,
+                        showldBeIssuedRmb,
+                        issuedRmb,
+                        unissuedRmb);
                     return;
                 } else {
                     const numberMatch = messageText.match(/(\d+(\.\d{1,2})?)/);
@@ -409,12 +408,6 @@ bot.on("message", async (msg) => {
                         const amountReceived = parseFloat(num.toFixed(2));
                         let s = Number(amountReceived);
                         if (fixedRate !== null) {
-
-                            // if (fixedRate === 0.00) {
-                            //     console.log("除数不能为零");
-                            //     bot.sendMessage(chatId, "汇率为零，请先设置汇率!");
-                            //     return;
-                            // }
                             if (fixedRate === 0) {
                                 const response = await axios.get(apiUrl + Date.now(), {
                                     headers: {
@@ -422,7 +415,7 @@ bot.on("message", async (msg) => {
                                     }
                                 });
                                 fixedRate = response.data.data.sell[0].price;
-                                console.log("官网实时固定汇率：>>>>>>>>>>>>>>>>" + fixedRate)
+                                console.log('官网实时固定汇率：>>>>>>>>>>>>>>>>' + fixedRate);
                             }
 
                             dailyTotalAmount = (parseFloat(s) + Number(dailyTotalAmount)).toFixed(2);
@@ -441,13 +434,13 @@ bot.on("message", async (msg) => {
 
                             unissuedRmb = (dailyTotalAmount / parseFloat(fixedRate) * parseFloat(fixedRate)).toFixed(2);
                             numberofEntries += 1;
-                            if (rate !== "0" && rate > 0) {
+                            if (rate !== '0' && rate > 0) {
                                 let amountReceiveds = 0;
-                                amountReceiveds = amountReceived - amountReceived * rate / 100
+                                amountReceiveds = amountReceived - amountReceived * rate / 100;
                                 await handleIncomingRecordAddZero(amountReceiveds, fixedRate);
-                            } else if (rate !== "0" && rate < 0) {
+                            } else if (rate !== '0' && rate < 0) {
                                 let amountReceiveds = 0;
-                                amountReceiveds = amountReceived - amountReceived * rate / 100
+                                amountReceiveds = amountReceived - amountReceived * rate / 100;
                                 await handleIncomingRecordAddZero(amountReceiveds, fixedRate);
                             } else {
                                 await handleIncomingRecordAddZero(amountReceived, fixedRate);
@@ -469,7 +462,7 @@ bot.on("message", async (msg) => {
                             return;
 
                         } else {
-                            bot.sendMessage(chatId, "请先设置汇率!")
+                            bot.sendMessage(chatId, '请先设置汇率!');
                         }
                     }
 
@@ -477,19 +470,13 @@ bot.on("message", async (msg) => {
                 }
             }
 
-            if (messageText.startsWith("+") && !checkForSpecialChars(messageText)) {
+            if (messageText.startsWith('+') && !checkForSpecialChars(messageText)) {
                 const numberMatch = messageText.match(/(\d+(\.\d{1,2})?)/);
                 if (numberMatch) {
                     let num = Number(numberMatch[0]);
                     const amountReceived = parseFloat(num.toFixed(2));
                     let s = Number(amountReceived);
                     if (fixedRate !== null) {
-
-                        // if (fixedRate === 0.00) {
-                        //     console.log("除数不能为零");
-                        //     bot.sendMessage(chatId, "汇率为零，请先设置汇率!");
-                        //     return;
-                        // }
                         if (fixedRate === 0) {
                             const response = await axios.get(apiUrl + Date.now(), {
                                 headers: {
@@ -497,7 +484,7 @@ bot.on("message", async (msg) => {
                                 }
                             });
                             fixedRate = response.data.data.sell[0].price;
-                            console.log("官网实时固定汇率：>>>>>>>>>>>>>>>>" + fixedRate)
+                            console.log('官网实时固定汇率：>>>>>>>>>>>>>>>>' + fixedRate);
                         }
 
                         dailyTotalAmount = (parseFloat(s) + Number(dailyTotalAmount)).toFixed(2);
@@ -536,13 +523,13 @@ bot.on("message", async (msg) => {
                             return;
                         } else {
                             numberofEntries += 1;
-                            if (rate !== "0" && rate > 0) {
+                            if (rate !== '0' && rate > 0) {
                                 let amountReceiveds = 0;
-                                amountReceiveds = amountReceived - amountReceived * rate / 100
+                                amountReceiveds = amountReceived - amountReceived * rate / 100;
                                 await handleIncomingRecordAddZero(amountReceiveds, fixedRate);
-                            } else if (rate !== "0" && rate < 0) {
+                            } else if (rate !== '0' && rate < 0) {
                                 let amountReceiveds = 0;
-                                amountReceiveds = amountReceived - amountReceived * rate / 100
+                                amountReceiveds = amountReceived - amountReceived * rate / 100;
                                 await handleIncomingRecordAddZero(amountReceiveds, fixedRate);
                             } else {
                                 await handleIncomingRecordAddZero(amountReceived, fixedRate);
@@ -565,13 +552,13 @@ bot.on("message", async (msg) => {
                         }
 
                     } else {
-                        bot.sendMessage(chatId, "请先设置汇率!")
+                        bot.sendMessage(chatId, '请先设置汇率!');
                     }
                 }
             }
 
             //进行数字输入计算
-            if (messageText.startsWith("+") && !messageText.startsWith("设置")) {
+            if (messageText.startsWith('+') && !messageText.startsWith('设置')) {
                 const regex = /(-?\d+)(\/\d+(\.\d+)?)$/; // 修改捕获组
                 const match = messageText.match(regex);
                 if (match) {
@@ -609,7 +596,7 @@ bot.on("message", async (msg) => {
                                     }
                                 });
                                 fixedRate = response.data.data.sell[0].price;
-                                console.log("官网实时固定汇率：>>>>>>>>>>>>>>>>" + fixedRate)
+                                console.log('官网实时固定汇率：>>>>>>>>>>>>>>>>' + fixedRate);
                             }
 
                             dailyTotalAmount = (parseFloat(s) + Number(dailyTotalAmount)).toFixed(2);
@@ -631,7 +618,7 @@ bot.on("message", async (msg) => {
                             numberofEntries += 1;
                             await handleIncomingRecord(amountReceived, fixedRate);
                             billingStyle = await sendRecordsToUser(incomingRecords);
-                            console.log("查看格式化样式", billingStyle);
+                            console.log('查看格式化样式', billingStyle);
                             await sendPymenTemplate(chatId,
                                 dailyTotalAmount,
                                 showldBeIssued,
@@ -644,17 +631,17 @@ bot.on("message", async (msg) => {
                         }
                         return;
                     } else {
-                        bot.sendMessage(chatId, "请先设置汇率!")
+                        bot.sendMessage(chatId, '请先设置汇率!');
                     }
 
                     return;
                 } else {
-                    bot.sendMessage(chatId, "请输入正确的数据格式")
+                    bot.sendMessage(chatId, '请输入正确的数据格式');
                     return;
                 }
             }
             //进行数字输入计算
-            if (messageText.startsWith("-") && !messageText.startsWith("设置")) {
+            if (messageText.startsWith('-') && !messageText.startsWith('设置')) {
                 const regex = /(-?\d+)(\/\d+(\.\d+)?)$/; // 修改捕获组
                 const match = messageText.match(regex);
                 if (match) {
@@ -671,7 +658,7 @@ bot.on("message", async (msg) => {
                     if (messageText.match(regexs)) {
                         const amount = parseFloat(messageText.match(regexs)[1]);
                         const price = parseFloat(messageText.match(regexs)[4]);
-                        const result = parseFloat("-" + amount * price).toFixed(2);
+                        const result = parseFloat('-' + amount * price).toFixed(2);
                         await bot.sendMessage(chatId, result, {
                             reply_to_message_id: messageId
                         });
@@ -679,13 +666,13 @@ bot.on("message", async (msg) => {
                     }
                     return;
                 } else {
-                    bot.sendMessage(chatId, "请输入正确的数据格式")
+                    bot.sendMessage(chatId, '请输入正确的数据格式');
                     return;
                 }
             }
 
             try {
-                if (messageText === "删除账单") {
+                if (messageText === '删除账单') {
                     const isAdmin = await checkifUserIsAdmin(bot, msg);
                     if (isAdmin) {
                         // bot.deleteMessage(chatId, messageId)
@@ -700,6 +687,9 @@ bot.on("message", async (msg) => {
                             });
                             fixedRate = response.data.data.sell[0].price;
                         }
+
+                        billingStyle = Array.from({ length: 1 }, () => 0);
+                        issueRecords = Array.from({ length: 1 }, () => 0);
 
                         showldBeIssued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
 
@@ -716,33 +706,26 @@ bot.on("message", async (msg) => {
                         unissuedRmb = (parseFloat(unissued * fixedRate)).toFixed(2);
 
                         billingStyle = await sendRecordsToUser(incomingRecords);
-                        console.log("查看格式化样式", billingStyle);
+                        console.log('查看格式化样式', billingStyle);
 
                         clearArray(incomingRecords);
                         clearArray(issueRecordsArr);
-                        bot.sendMessage(chatId, "今日账单清理完成", {
+                        bot.sendMessage(chatId, '今日账单清理完成', {
                             reply_to_message_id: originalMessageId
                         });
                     } else {
-                        bot.sendMessage(chatId, "没有操作权限!")
+                        bot.sendMessage(chatId, '没有操作权限!');
                     }
                 }
 
             } catch (error) {
-                console.error("操作删除账单错误", error);
+                console.error('操作删除账单错误', error);
                 throw error;
             }
-
-            if (messageText.startsWith("显示账单") || messageText === "账单") {
+            if (messageText.startsWith('显示账单') || messageText === '账单') {
 
                 let s = Number(dailyTotalAmount);
                 dailyTotalAmount = (s).toFixed(2);
-
-                // if (fixedRate === 0.00) {
-                //     console.log("除数不能为零");
-                //     bot.sendMessage(chatId, "汇率为零，请先设置汇率!");
-                //     return;
-                // }
 
                 if (fixedRate === 0) {
                     const response = await axios.get(apiUrl + Date.now(), {
@@ -768,7 +751,7 @@ bot.on("message", async (msg) => {
 
                 numberofEntries += 1;
                 billingStyle = await sendRecordsToUser(incomingRecords);
-                console.log("查看格式化样式", billingStyle);
+                console.log('查看格式化样式', billingStyle);
                 await sendPymenTemplate(chatId,
                     dailyTotalAmount,
                     showldBeIssued,
@@ -781,10 +764,10 @@ bot.on("message", async (msg) => {
             }
 
         } catch (error) {
-            console.error("处理入账命令出错", error);
+            console.error('处理入账命令出错', error);
         }
     } catch (error) {
-        console.log("处理命令时出现错误", error);
+        console.log('处理命令时出现错误', error);
         throw error;
     }
 });
@@ -804,8 +787,8 @@ function deleteBillTemplate(chatId,
     const keyboard = {
         inline_keyboard: [
             [
-                { text: "公群导航", url: "https://t.me/dbcksq" },
-                { text: "供求信息", url: "https://t.me/s/TelePlanting" },
+                { text: '公群导航', url: 'https://t.me/dbcksq' },
+                { text: '供求信息', url: 'https://t.me/s/TelePlanting' },
             ],
         ],
     };
@@ -825,7 +808,7 @@ function deleteBillTemplate(chatId,
 `;
 
     bot.sendMessage(chatId, message, {
-        parse_mode: "HTML",
+        parse_mode: 'HTML',
         reply_markup: keyboard,
         disable_web_page_preview: true,
     });
@@ -848,9 +831,9 @@ function sendPymenTemplate(chatId,
     const keyboard = {
         inline_keyboard: [
             [
-                { text: "公群导航", url: "https://t.me/dbcksq" },
+                { text: '公群导航', url: 'https://t.me/dbcksq' },
                 // { text: "供求信息", url: "https://t.me/s/TelePlanting" },
-                { text: "点击跳转完整账单", url: "https://acbot.top/?id=" + chatId },
+                { text: '点击跳转完整账单', url: 'https://acbot.top/?id=' + chatId },
             ],
         ],
     };
@@ -869,7 +852,7 @@ function sendPymenTemplate(chatId,
     未下发: ${unissuedRmb} | ${unissued} (USDT)
 `;
     bot.sendMessage(chatId, message, {
-        parse_mode: "HTML",
+        parse_mode: 'HTML',
         reply_markup: keyboard,
         disable_web_page_preview: true,
     });
@@ -890,9 +873,9 @@ function sendPymenTemplateAddZero(chatId,
     const keyboard = {
         inline_keyboard: [
             [
-                { text: "公群导航", url: "https://t.me/dbcksq" },
+                { text: '公群导航', url: 'https://t.me/dbcksq' },
                 // { text: "供求信息", url: "https://t.me/s/TelePlanting" },
-                { text: "点击跳转完整账单", url: "https://acbot.top/?id=" + chatId },
+                { text: '点击跳转完整账单', url: 'https://acbot.top/?id=' + chatId },
             ],
         ],
     };
@@ -910,7 +893,7 @@ function sendPymenTemplateAddZero(chatId,
 `;
 
     bot.sendMessage(chatId, message, {
-        parse_mode: "HTML",
+        parse_mode: 'HTML',
         reply_markup: keyboard,
         disable_web_page_preview: true,
     });
@@ -920,7 +903,7 @@ function sendPymenTemplateAddZero(chatId,
 //处理入款记录的函数
 async function handleIncomingRecord(amountReceived, fixedRate) {
     const beijingTime = await getBeijingTime();
-    console.log("查看时间格式", beijingTime);
+    console.log('查看时间格式', beijingTime);
     const timestamp = Math.floor(beijingTime.toMillis() / 1000);
 
     const convertedAmount = (amountReceived / fixedRate).toFixed(2);
@@ -938,7 +921,7 @@ async function handleIncomingRecord(amountReceived, fixedRate) {
 //处理入款记录的函数+0
 async function handleIncomingRecordAddZero(amountReceived, fixedRate) {
     const beijingTime = await getBeijingTime();
-    console.log("查看时间格式", beijingTime);
+    console.log('查看时间格式', beijingTime);
     const timestamp = Math.floor(beijingTime.toMillis() / 1000);
 
     const convertedAmount = (amountReceived / fixedRate).toFixed(2);
@@ -953,11 +936,10 @@ async function handleIncomingRecordAddZero(amountReceived, fixedRate) {
 }
 
 
-
 //处理下发记录的函数
 async function handleIssueRecords(amountReceived, fixedRate) {
     const beijingTime = await getBeijingTime();
-    console.log("查看时间格式", beijingTime);
+    console.log('查看时间格式', beijingTime);
     const timestamp = Math.floor(beijingTime.toMillis() / 1000);
 
     const convertedAmount = (amountReceived * fixedRate).toFixed(2);
@@ -972,14 +954,14 @@ async function handleIssueRecords(amountReceived, fixedRate) {
 }
 
 async function getBeijingTime() {
-    const beijingTime = DateTime.now().setZone("Asia/Shanghai");
+    const beijingTime = DateTime.now().setZone('Asia/Shanghai');
     return beijingTime;
 }
 
 async function sendRecordsToUser(records) {
     const hasNonZero = records.some(item => item !== 0);
     let recordsArr = [];
-    let text = "";
+    let text = '';
     if (!hasNonZero) {
         return;
     }
@@ -993,10 +975,11 @@ async function sendRecordsToUser(records) {
     }
     return recordsArr;
 }
+
 //发送下发记录
 async function issueSendRecordsToUser(records) {
     let issSueArr = [];
-    let text = "";
+    let text = '';
     for (const incomingRecord of records) {
         const formattedRecord = await issueFormatRecordText(incomingRecord);
         text = formattedRecord;
@@ -1011,11 +994,11 @@ async function issueSendRecordsToUser(records) {
 //处理已下发
 async function issueFormatRecordText(records) {
     const options = {
-        locale: "zh-CN",
+        locale: 'zh-CN',
         hour12: false,
     };
     const timestamp = new Date(records.timestamp * 1000).toLocaleTimeString(
-        "zh-CN",
+        'zh-CN',
         options
     );
     const foormatRecordText = `${timestamp} ${records.amountReceived} * ${records.fixedRate} = ${records.convertedAmount}(RMB)`;
@@ -1026,11 +1009,11 @@ async function issueFormatRecordText(records) {
 
 async function formatRecordText(records) {
     const options = {
-        locale: "zh-CN",
+        locale: 'zh-CN',
         hour12: false,
     };
     const timestamp = new Date(records.timestamp * 1000).toLocaleTimeString(
-        "zh-CN",
+        'zh-CN',
         options
     );
     const foormatRecordText = `${timestamp} ${records.amountReceived} / ${records.fixedRate} = ${records.convertedAmount}`;
@@ -1048,6 +1031,7 @@ async function getUsdtPrice() {
         console.error('获取USDT价格失败:', error);
     }
 }
+
 //正则匹配校验是否包含（/ 或者 *）
 function checkForSpecialChars(messageText) {
     const regex = /[\/\*]/; // 匹配 / 或 *
@@ -1061,7 +1045,7 @@ async function deleteChatBot() {
         boostId: boost_id,
         remove_date: remove_date,
         source: source
-    }
+    };
 }
 
 //清空数组
@@ -1072,7 +1056,7 @@ function clearArray(arr) {
 async function getTop10Rates(bot, msg, chatId) {
     const messageText = msg.text;
 
-    if (messageText === "z0") {
+    if (messageText === 'z0') {
         const isAdmin = await checkifUserIsAdmin(bot, msg);
         if (isAdmin) {
             try {

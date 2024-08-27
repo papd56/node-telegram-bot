@@ -95,6 +95,9 @@ let dailyTotalAmount = 0.00; //入款总金额
 let numberofEntries = 0; //入账笔数
 let issueofEntries = 0; //下发笔数
 let showldBeIssued = 0.00; //应下发金额
+
+let showldBeIssueds = 0.00; //应下过滤金额
+
 let showldBeIssuedRmb = 0.00; //应下发金额rmb
 let issued = 0.00; //已下发金额
 let issuedRmb = 0.00; //已下发金额rmb
@@ -260,19 +263,20 @@ bot.on("message", async (msg) => {
                             });
                             fixedRate = response.data.data.sell[0].price;
                         }
+                        showldBeIssueds = showldBeIssued;
                         showldBeIssued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
 
                         showldBeIssuedRmb = (dailyTotalAmount / parseFloat(fixedRate) * parseFloat(fixedRate)).toFixed(2);
 
                         //已下发金额 = 入款总金额
-                        issued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
+                        issued = s;
 
-                        issuedRmb = (dailyTotalAmount / parseFloat(fixedRate) * fixedRate).toFixed(2);
+                        issuedRmb = (parseFloat(issued * fixedRate)).toFixed(2);
 
                         //未下发金额 = 入款总金额 - 已下发金额
-                        unissued = (parseFloat(dailyTotalAmount - issued) / fixedRate).toFixed(2);
+                        unissued = (parseFloat(showldBeIssueds - issued)).toFixed(2);
 
-                        unissuedRmb = (parseFloat(dailyTotalAmount - issued) * fixedRate).toFixed(2);
+                        unissuedRmb = (parseFloat(showldBeIssueds - issued) * fixedRate).toFixed(2);
 
                         numberofEntries += 1;
                         issueofEntries += 1;
@@ -503,9 +507,9 @@ bot.on("message", async (msg) => {
                         showldBeIssuedRmb = (dailyTotalAmount / parseFloat(fixedRate) * parseFloat(fixedRate)).toFixed(2);
 
                         //已下发金额 = 入款总金额
-                        issued = (parseFloat(issued + dailyTotalAmount)).toFixed(2);
+                        // issued = (parseFloat(issued + dailyTotalAmount)).toFixed(2);
 
-                        issuedRmb = (parseFloat(issued + dailyTotalAmount) * fixedRate).toFixed(2);
+                        // issuedRmb = (parseFloat(issued + dailyTotalAmount) * fixedRate).toFixed(2);
 
                         //未下发金额 = 入款总金额 - 已下发金额
                         unissued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);

@@ -87,16 +87,16 @@ bot.on('new_chat_members', async (msg) => {
   if (msg) {
     const chatId = msg.chat.id;
     const newMembers = msg.new_chat_members;
+    let users = [];
     for (let member of newMembers) {
       await bot.sendMessage(chatId, '欢迎 ' + member.first_name + ' 进群' + ',' + 'tgid ' + member.id + ',' + 'tg注册时间为2021-11-10后');
+      users.push({
+        botId: botInfo.id,
+        userId: member.id,
+        userName: member.username,
+        userNickname: member.first_name
+      });
     }
-    let users = [];
-    users.push({
-      botId: botInfo.id,
-      userId: member.id,
-      userName: member.username,
-      userNickname: member.first_name
-    });
     await cache.hset(member.username, users);
   }
 });

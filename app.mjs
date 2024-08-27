@@ -61,11 +61,10 @@ const cache = new Redis({
     idleTimeout: 60000
 });
 
-
-//下发缓存key
-const isueCacheKey = 'isueCacheKey';
-//+钱缓存key
-const inComingRecordKey = 'inComingRecordKey';
+// 缓存 应下发 已下发 未下发key
+const CACHE_KEY_SHOULD_BE_ISSUED = 'shouldBeIssued';
+const CACHE_KEY_HAS_BEEN_ISSUED = 'hasBeenIssued';
+const CACHE_KEY_HAS_NOT_BEEN_ISSUED = 'hasNotBeenIssued';
 
 const incomingRecords = [];
 const billingStyleZeroRecords = [];
@@ -287,7 +286,10 @@ bot.on("message", async (msg) => {
                             numberofEntries,
                             billingStyle,
                             issueRecords,
-                            issueofEntries);
+                            issueofEntries,
+                            showldBeIssuedRmb,
+                            issuedRmb,
+                            unissuedRmb);
 
                     } else {
                         bot.sendMessage(chatId, "请先设置汇率!")
@@ -516,9 +518,9 @@ bot.on("message", async (msg) => {
                         issuedRmb = (parseFloat(issued + dailyTotalAmount) * fixedRate).toFixed(2);
 
                         //未下发金额 = 入款总金额 - 已下发金额
-                        unissued = (parseFloat(dailyTotalAmount - issued) / fixedRate).toFixed(2);
+                        unissued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
 
-                        unissuedRmb = (parseFloat(dailyTotalAmount - issued) * fixedRate).toFixed(2);
+                        unissuedRmb = (dailyTotalAmount / parseFloat(fixedRate) * parseFloat(fixedRate)).toFixed(2);
 
                         if (messageText === '+0') {
                             await handleIncomingRecord(amountReceived, fixedRate);
@@ -543,11 +545,11 @@ bot.on("message", async (msg) => {
                             if (rate !== "0" && rate > 0) {
                                 let amountReceiveds = 0;
                                 amountReceiveds = amountReceived - amountReceived * rate / 100
-                                await handleIncomingRecordAddZero(amountReceiveds, rate);
+                                await handleIncomingRecordAddZero(amountReceiveds, fixedRate);
                             } else if (rate !== "0" && rate < 0) {
                                 let amountReceiveds = 0;
                                 amountReceiveds = amountReceived - amountReceived * rate / 100
-                                await handleIncomingRecordAddZero(amountReceiveds, Math.abs(rate));
+                                await handleIncomingRecordAddZero(amountReceiveds, fixedRate);
                             } else {
                                 await handleIncomingRecordAddZero(amountReceived, fixedRate);
                             }

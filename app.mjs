@@ -445,7 +445,12 @@ bot.on('message', async (msg) => {
                             } else {
                                 await handleIncomingRecordAddZero(amountReceived, fixedRate);
                             }
-                            billingStyle = await sendRecordsToUser(billingStyleZeroRecords);
+                            if (previousMessage.text === '+0') {
+                                numberofEntries = 0;
+                                billingStyle = Array.from({ length: 1 }, () => 0);
+                            } else {
+                                billingStyle = await sendRecordsToUser(billingStyleZeroRecords);
+                            }
                             // const issueRecordsArr = myCache.get(inComingRecordKey);
                             await sendPymenTemplate(chatId,
                                 dailyTotalAmount,
@@ -706,7 +711,8 @@ bot.on('message', async (msg) => {
                         unissuedRmb = (parseFloat(unissued * fixedRate)).toFixed(2);
 
                         billingStyle = await sendRecordsToUser(incomingRecords);
-                        console.log('查看格式化样式', billingStyle);
+                        //重置账单数组为0
+                        billingStyle = Array.from({ length: 1 }, () => 0);
 
                         clearArray(incomingRecords);
                         clearArray(issueRecordsArr);

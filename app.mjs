@@ -383,23 +383,21 @@ bot.on("message", async (msg) => {
             }
 
             if (messageText === "+0") {
-                if (previousMessage) {
-                    if (previousMessage.text === "删除账单") {
-                        numberofEntries = 0;
-                        issueofEntries = 0;
-                        await deleteBillTemplate(chatId,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0);
-                        return;
-                    }
+                if (previousMessage.text === "删除账单") {
+                    numberofEntries = 0;
+                    issueofEntries = 0;
+                    await deleteBillTemplate(chatId,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0);
+                    return;
                 } else {
                     const numberMatch = messageText.match(/(\d+(\.\d{1,2})?)/);
                     if (numberMatch) {
@@ -423,7 +421,7 @@ bot.on("message", async (msg) => {
                                 console.log("官网实时固定汇率：>>>>>>>>>>>>>>>>" + fixedRate)
                             }
 
-                            dailyTotalAmount = 0;
+                            dailyTotalAmount = (parseFloat(s) + Number(dailyTotalAmount)).toFixed(2);
 
                             showldBeIssued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
 
@@ -435,50 +433,42 @@ bot.on("message", async (msg) => {
                             issuedRmb = (parseFloat(issued + dailyTotalAmount) * fixedRate).toFixed(2);
 
                             //未下发金额 = 入款总金额 - 已下发金额
-                            unissued = (parseFloat(dailyTotalAmount - issued) / fixedRate).toFixed(2);
+                            unissued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
 
-                            unissuedRmb = (parseFloat(dailyTotalAmount - issued) * fixedRate).toFixed(2);
-
-                            numberofEntries += 0;
-                            issueofEntries += 0;
-                            // billingStyle = [];
-                            // await handleIncomingRecord(amountReceived, fixedRate);
-                            // await handleIssueRecords(amountReceived, fixedRate);
-                            // const issueRecordsArr = myCache.get(inComingRecordKey);
-                            billingStyle = await sendRecordsToUser(incomingRecords);
-                            console.log("billingStyle" + billingStyle)
-                            issueRecords = await issueSendRecordsToUser(issueRecordsArr);
-                            if (billingStyle === undefined) {
-                                console.log("进入")
-                                await deleteBillTemplate(chatId,
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    0);
-                                return;
+                            unissuedRmb = (dailyTotalAmount / parseFloat(fixedRate) * parseFloat(fixedRate)).toFixed(2);
+                            numberofEntries += 1;
+                            if (rate !== "0" && rate > 0) {
+                                let amountReceiveds = 0;
+                                amountReceiveds = amountReceived - amountReceived * rate / 100
+                                await handleIncomingRecordAddZero(amountReceiveds, fixedRate);
+                            } else if (rate !== "0" && rate < 0) {
+                                let amountReceiveds = 0;
+                                amountReceiveds = amountReceived - amountReceived * rate / 100
+                                await handleIncomingRecordAddZero(amountReceiveds, fixedRate);
                             } else {
-                                await sendPymenTemplate(chatId,
-                                    dailyTotalAmount,
-                                    showldBeIssued,
-                                    issued,
-                                    unissued,
-                                    numberofEntries,
-                                    billingStyle,
-                                    issueRecords,
-                                    issueofEntries);
-                                return;
+                                await handleIncomingRecordAddZero(amountReceived, fixedRate);
                             }
+                            billingStyle = await sendRecordsToUser(billingStyleZeroRecords);
+                            // const issueRecordsArr = myCache.get(inComingRecordKey);
+                            await sendPymenTemplate(chatId,
+                                dailyTotalAmount,
+                                showldBeIssued,
+                                issued,
+                                unissued,
+                                numberofEntries,
+                                billingStyle,
+                                issueRecords,
+                                issueofEntries,
+                                showldBeIssuedRmb,
+                                issuedRmb,
+                                unissuedRmb);
+                            return;
 
                         } else {
                             bot.sendMessage(chatId, "请先设置汇率!")
                         }
                     }
+
                     return;
                 }
             }

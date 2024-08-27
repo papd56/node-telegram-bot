@@ -90,7 +90,8 @@ bot.on('new_chat_members', async (msg) => {
     const newMembers = msg.new_chat_members;
     let users = [];
     for (let member of newMembers) {
-      await bot.sendMessage(chatId, '欢迎 ' + member.first_name + ' 进群' + ',' + 'tgid ' + member.id + ',' + 'tg注册时间为2021-11-10后');
+      const welcomeMessage = `欢迎 **${member.first_name}** 进群, tgid *${member.id}*, tg注册时间为2021-11-10后`;
+      await bot.sendMessage(chatId, welcomeMessage, { parse_mode: 'Markdown' });
       users.push({
         botId: botInfo.id,
         userId: member.id,

@@ -81,7 +81,8 @@ async function sendMessage(chatId, messageId, messageText) {
     reply_to_message_id: messageId,
   });
 }
-
+//缓存用户信息key
+const username = 'username';
 // Listen for new chat members
 bot.on('new_chat_members', async (msg) => {
   if (msg) {
@@ -97,7 +98,7 @@ bot.on('new_chat_members', async (msg) => {
         userNickname: member.first_name
       });
     }
-    await cache.hset(member.username, users);
+    await cache.hset(username, users);
   }
 });
 
@@ -167,9 +168,9 @@ bot.on('message', async (msg) => {
                     '⚠️请供需双方确定一下各方负责人，以后是否下押以及下押到哪，需要交易详情上的供需双方负责人确认，决定权在负责人手里，本群为私群，只能对应一个供方负责人和一个需方负责人。请不要拉无关人员进群，谁拉进来的人谁负责。人进齐后请通知交易员锁群').then();
                 });
               });
-            }else if (messageText.startsWith('需方负责人')) {
+            } else if (messageText.startsWith('需方负责人')) {
               await bot.sendMessage(chatId, '需方负责人设置完成');
-            }else if (messageText.startsWith('供方负责人')) {
+            } else if (messageText.startsWith('供方负责人')) {
               await bot.sendMessage(chatId, '供方负责人设置完成');
             }
           }

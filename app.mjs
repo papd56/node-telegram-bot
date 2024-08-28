@@ -67,6 +67,7 @@ const CACHE_KEY_HAS_BEEN_ISSUED = 'hasBeenIssued';
 const CACHE_KEY_HAS_NOT_BEEN_ISSUED = 'hasNotBeenIssued';
 
 const incomingRecords = [];
+const amountReceivedBill = 0;
 const billingStyleZeroRecords = [];
 const issueRecordsArr = [];
 // 替换成OKEx的API接口地址
@@ -735,9 +736,7 @@ bot.on('message', async (msg) => {
             }
             if (messageText.startsWith('显示账单') || messageText === '账单') {
 
-                let s = Number(dailyTotalAmount);
-                dailyTotalAmount = (s).toFixed(2);
-
+                let s = Number(issued);
                 if (fixedRate === 0) {
                     const response = await axios.get(apiUrl + Date.now(), {
                         headers: {
@@ -767,7 +766,7 @@ bot.on('message', async (msg) => {
                 console.log('查看格式化样式', billingStyle);
                 await sendPymenTemplate(chatId,
                     dailyTotalAmount,
-                    showldBeIssued,
+                    showldBeIssueds,
                     issued,
                     unissued,
                     numberofEntries,

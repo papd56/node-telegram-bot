@@ -794,7 +794,11 @@ function deleteBillTemplate(chatId,
         inline_keyboard: [
             [
                 { text: '公群导航', url: 'https://t.me/dbcksq' },
-                { text: '供求信息', url: 'https://t.me/s/TelePlanting' },
+                { text: '完整账单', url: 'https://acbot.top/?id=' + chatId },
+            ],
+            [
+                { text: '使用说明', url: 'https://t.me/jindingjizhang_bot?6' },
+                { text: '供求信息', url: 'https://t.me/gongqiu' },
             ],
         ],
     };

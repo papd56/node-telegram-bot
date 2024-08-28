@@ -688,6 +688,7 @@ bot.on('message', async (msg) => {
                         incomingRecords.splice(0);
                         billingStyleZeroRecords.splice(0);
                         issueRecordsArr.splice(0);
+                        issueRecords = Array.from({ length: 1 }, () => 0);
                         bot.sendMessage(chatId, '今日账单清理完成', {
                             reply_to_message_id: originalMessageId
                         });

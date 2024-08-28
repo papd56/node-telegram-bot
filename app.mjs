@@ -543,6 +543,7 @@ bot.on('message', async (msg) => {
                             } else {
                                 await handleIncomingRecordAddZero(amountReceived, fixedRate);
                             }
+
                             billingStyle = await sendRecordsToUser(billingStyleZeroRecords);
                             // const issueRecordsArr = myCache.get(inComingRecordKey);
                             await sendPymenTemplate(chatId,
@@ -684,42 +685,20 @@ bot.on('message', async (msg) => {
                 if (messageText === '删除账单') {
                     const isAdmin = await checkifUserIsAdmin(bot, msg);
                     if (isAdmin) {
-                        // bot.deleteMessage(chatId, messageId)
-                        let s = Number(dailyTotalAmount);
-                        dailyTotalAmount = (s).toFixed(2);
-
-                        if (fixedRate === 0) {
-                            const response = await axios.get(apiUrl + Date.now(), {
-                                headers: {
-                                    'User-Agent': ''
-                                }
-                            });
-                            fixedRate = response.data.data.sell[0].price;
-                        }
-
+                        // 下发账单所有数据重置为0
+                        dailyTotalAmount = 0;
+                        showldBeIssued = 0;
+                        issued = 0;
+                        unissued = 0;
+                        numberofEntries = 0;
+                        issueofEntries = 0;
+                        showldBeIssuedRmb = 0;
+                        issuedRmb = 0;
+                        unissuedRmb = 0;
                         billingStyle = Array.from({ length: 1 }, () => 0);
-                        issueRecords = Array.from({ length: 1 }, () => 0);
-
-                        showldBeIssued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
-
-                        showldBeIssuedRmb = (dailyTotalAmount / parseFloat(fixedRate) * parseFloat(fixedRate)).toFixed(2);
-
-                        //已下发金额 = 入款总金额
-                        issued = (parseFloat(issued + dailyTotalAmount)).toFixed(2);
-
-                        issuedRmb = (parseFloat(issued + dailyTotalAmount) * fixedRate).toFixed(2);
-
-                        //未下发金额 = 入款总金额 - 已下发金额
-                        unissued = (parseFloat(dailyTotalAmount - issued) / fixedRate).toFixed(2);
-
-                        unissuedRmb = (parseFloat(unissued * fixedRate)).toFixed(2);
-
-                        billingStyle = await sendRecordsToUser(incomingRecords);
-                        //重置账单数组为0
-                        billingStyle = Array.from({ length: 1 }, () => 0);
-
-                        clearArray(incomingRecords);
-                        clearArray(issueRecordsArr);
+                        incomingRecords.splice(0);
+                        billingStyleZeroRecords.splice(0);
+                        issueRecordsArr.splice(0);
                         bot.sendMessage(chatId, '今日账单清理完成', {
                             reply_to_message_id: originalMessageId
                         });
@@ -817,7 +796,7 @@ function deleteBillTemplate(chatId,
 
     已下发(${issueofEntries})笔:
     暂无下发
-    
+
     总入款总金额: ${dailyTotalAmount}
     费率: ${rate}
     实时汇率: ${fixedRate}

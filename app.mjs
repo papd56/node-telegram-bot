@@ -254,12 +254,12 @@ bot.on('message', async (msg) => {
                             fixedRate = response.data.data.sell[0].price;
                         }
                         showldBeIssueds = showldBeIssued;
-                        showldBeIssued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
+                        // showldBeIssued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
 
                         showldBeIssuedRmb = (dailyTotalAmount / parseFloat(fixedRate) * parseFloat(fixedRate)).toFixed(2);
 
                         //已下发金额 = 入款总金额
-                        issued = s;
+                        issued += s;
 
                         issuedRmb = (parseFloat(issued * fixedRate)).toFixed(2);
 
@@ -274,7 +274,7 @@ bot.on('message', async (msg) => {
                         issueRecords = await issueSendRecordsToUser(issueRecordsArr);
                         await sendPymenTemplate(chatId,
                             dailyTotalAmount,
-                            showldBeIssued,
+                            showldBeIssueds,
                             issued,
                             unissued,
                             numberofEntries,
@@ -682,8 +682,6 @@ bot.on('message', async (msg) => {
 
             try {
                 if (messageText === '删除账单') {
-
-
                     const isAdmin = await checkifUserIsAdmin(bot, msg);
                     if (isAdmin) {
                         // bot.deleteMessage(chatId, messageId)
@@ -816,8 +814,10 @@ function deleteBillTemplate(chatId,
     <a href="https://t.me/oydbgq">欧易公群</a>  <a href="https://t.me/oyguanfang">欧易大群</a>
     已入款(${numberofEntries})笔:
      暂无入款
+
     已下发(${issueofEntries})笔:
     暂无下发
+    
     总入款总金额: ${dailyTotalAmount}
     费率: ${rate}
     实时汇率: ${fixedRate}

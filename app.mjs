@@ -377,34 +377,31 @@ bot.on('message', async (msg) => {
             }
 
             if (messageText === '+0') {
-                if (previousMessage !== undefined) {
-                    if (previousMessage.text === '删除账单') {
-                        //初始化数组默认值为0
-                        billingStyle = Array.from({ length: 1 }, () => 0);
-                        issueRecords = Array.from({ length: 1 }, () => 0);
-                        dailyTotalAmount = 0;
-                        showldBeIssued = 0;
-                        issued = 0;
-                        unissued = 0;
-                        numberofEntries = 0;
-                        issueofEntries = 0;
-                        showldBeIssuedRmb = 0;
-                        issuedRmb = 0;
-                        unissuedRmb = 0;
-                        await deleteBillTemplate(chatId,
-                            dailyTotalAmount,
-                            showldBeIssued,
-                            issued,
-                            unissued,
-                            numberofEntries,
-                            issueofEntries,
-                            billingStyle,
-                            showldBeIssuedRmb,
-                            issuedRmb,
-                            unissuedRmb);
-                        return;
-                    }
-
+                if (previousMessage !== undefined && previousMessage.text === '删除账单') {
+                    //初始化数组默认值为0
+                    billingStyle = Array.from({ length: 1 }, () => 0);
+                    issueRecords = Array.from({ length: 1 }, () => 0);
+                    dailyTotalAmount = 0;
+                    showldBeIssued = 0;
+                    issued = 0;
+                    unissued = 0;
+                    numberofEntries = 0;
+                    issueofEntries = 0;
+                    showldBeIssuedRmb = 0;
+                    issuedRmb = 0;
+                    unissuedRmb = 0;
+                    await deleteBillTemplate(chatId,
+                        dailyTotalAmount,
+                        showldBeIssued,
+                        issued,
+                        unissued,
+                        numberofEntries,
+                        issueofEntries,
+                        billingStyle,
+                        showldBeIssuedRmb,
+                        issuedRmb,
+                        unissuedRmb);
+                    return;
                 } else {
                     const numberMatch = messageText.match(/(\d+(\.\d{1,2})?)/);
                     if (numberMatch) {
@@ -428,16 +425,15 @@ bot.on('message', async (msg) => {
 
                             showldBeIssuedRmb = (dailyTotalAmount / parseFloat(fixedRate) * parseFloat(fixedRate)).toFixed(2);
 
-                            //已下发金额 = 入款总金额
-                            issued = (parseFloat(issued + dailyTotalAmount)).toFixed(2);
+                            // //已下发金额 = 入款总金额
+                            // issued = (parseFloat(issued + dailyTotalAmount)).toFixed(2);
 
-                            issuedRmb = (parseFloat(issued + dailyTotalAmount) * fixedRate).toFixed(2);
+                            // issuedRmb = (parseFloat(issued + dailyTotalAmount) * fixedRate).toFixed(2);
 
                             //未下发金额 = 入款总金额 - 已下发金额
                             unissued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
 
                             unissuedRmb = (dailyTotalAmount / parseFloat(fixedRate) * parseFloat(fixedRate)).toFixed(2);
-                            numberofEntries += 1;
                             if (rate !== '0' && rate > 0) {
                                 let amountReceiveds = 0;
                                 amountReceiveds = amountReceived - amountReceived * rate / 100;
@@ -446,15 +442,8 @@ bot.on('message', async (msg) => {
                                 let amountReceiveds = 0;
                                 amountReceiveds = amountReceived - amountReceived * rate / 100;
                                 await handleIncomingRecordAddZero(amountReceiveds, fixedRate);
-                            } else {
-                                await handleIncomingRecordAddZero(amountReceived, fixedRate);
                             }
-                            if (previousMessage !== undefined && previousMessage.text === '+0') {
-                                numberofEntries = 0;
-                                billingStyle = Array.from({ length: 1 }, () => 0);
-                            } else {
-                                billingStyle = await sendRecordsToUser(billingStyleZeroRecords);
-                            }
+                            billingStyle = await sendRecordsToUser(billingStyleZeroRecords);
                             // const issueRecordsArr = myCache.get(inComingRecordKey);
                             await sendPymenTemplate(chatId,
                                 dailyTotalAmount,

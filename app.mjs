@@ -376,31 +376,34 @@ bot.on('message', async (msg) => {
             }
 
             if (messageText === '+0') {
-                if (previousMessage.text === '删除账单') {
-                    //初始化数组默认值为0
-                    billingStyle = Array.from({ length: 1 }, () => 0);
-                    issueRecords = Array.from({ length: 1 }, () => 0);
-                    dailyTotalAmount = 0;
-                    showldBeIssued = 0;
-                    issued = 0;
-                    unissued = 0;
-                    numberofEntries = 0;
-                    issueofEntries = 0;
-                    showldBeIssuedRmb = 0;
-                    issuedRmb = 0;
-                    unissuedRmb = 0;
-                    await deleteBillTemplate(chatId,
-                        dailyTotalAmount,
-                        showldBeIssued,
-                        issued,
-                        unissued,
-                        numberofEntries,
-                        issueofEntries,
-                        billingStyle,
-                        showldBeIssuedRmb,
-                        issuedRmb,
-                        unissuedRmb);
-                    return;
+                if (previousMessage !== undefined) {
+                    if (previousMessage.text === '删除账单') {
+                        //初始化数组默认值为0
+                        billingStyle = Array.from({ length: 1 }, () => 0);
+                        issueRecords = Array.from({ length: 1 }, () => 0);
+                        dailyTotalAmount = 0;
+                        showldBeIssued = 0;
+                        issued = 0;
+                        unissued = 0;
+                        numberofEntries = 0;
+                        issueofEntries = 0;
+                        showldBeIssuedRmb = 0;
+                        issuedRmb = 0;
+                        unissuedRmb = 0;
+                        await deleteBillTemplate(chatId,
+                            dailyTotalAmount,
+                            showldBeIssued,
+                            issued,
+                            unissued,
+                            numberofEntries,
+                            issueofEntries,
+                            billingStyle,
+                            showldBeIssuedRmb,
+                            issuedRmb,
+                            unissuedRmb);
+                        return;
+                    }
+
                 } else {
                     const numberMatch = messageText.match(/(\d+(\.\d{1,2})?)/);
                     if (numberMatch) {
@@ -445,7 +448,7 @@ bot.on('message', async (msg) => {
                             } else {
                                 await handleIncomingRecordAddZero(amountReceived, fixedRate);
                             }
-                            if (previousMessage.text === '+0') {
+                            if (previousMessage !== undefined && previousMessage.text === '+0') {
                                 numberofEntries = 0;
                                 billingStyle = Array.from({ length: 1 }, () => 0);
                             } else {
@@ -678,6 +681,8 @@ bot.on('message', async (msg) => {
 
             try {
                 if (messageText === '删除账单') {
+
+
                     const isAdmin = await checkifUserIsAdmin(bot, msg);
                     if (isAdmin) {
                         // bot.deleteMessage(chatId, messageId)
@@ -742,21 +747,23 @@ bot.on('message', async (msg) => {
                     fixedRate = response.data.data.sell[0].price;
                 }
 
+                showldBeIssueds = showldBeIssued;
                 showldBeIssued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
 
                 showldBeIssuedRmb = (dailyTotalAmount / parseFloat(fixedRate) * parseFloat(fixedRate)).toFixed(2);
 
                 //已下发金额 = 入款总金额
-                issued = (parseFloat(issued + dailyTotalAmount)).toFixed(2);
+                issued = s;
 
-                issuedRmb = (parseFloat(issued + dailyTotalAmount) * fixedRate).toFixed(2);
+                issuedRmb = (parseFloat(issued * fixedRate)).toFixed(2);
+
                 //未下发金额 = 入款总金额 - 已下发金额
-                unissued = (parseFloat(dailyTotalAmount - issued) / fixedRate).toFixed(2);
+                unissued = (parseFloat(showldBeIssueds - issued)).toFixed(2);
 
-                unissuedRmb = (parseFloat(unissued * fixedRate)).toFixed(2);
+                unissuedRmb = (parseFloat(showldBeIssueds - issued) * fixedRate).toFixed(2);
 
                 numberofEntries += 1;
-                billingStyle = await sendRecordsToUser(incomingRecords);
+                billingStyle = await sendRecordsToUser(billingStyleZeroRecords);
                 console.log('查看格式化样式', billingStyle);
                 await sendPymenTemplate(chatId,
                     dailyTotalAmount,
@@ -766,7 +773,10 @@ bot.on('message', async (msg) => {
                     numberofEntries,
                     billingStyle,
                     issueRecords,
-                    issueofEntries);
+                    issueofEntries,
+                    showldBeIssuedRmb,
+                    issuedRmb,
+                    unissuedRmb);
             }
 
         } catch (error) {

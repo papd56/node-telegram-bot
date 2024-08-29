@@ -1141,6 +1141,14 @@ async function getTop10Rates(bot, msg, chatId) {
                         output += '`' + (index + 1) + ') ' + item.price + '   ' + item.nickName + '\n`';
                     });
 
+                    if (fixedRate === 0) {
+                        const response = await axios.get(apiUrl + Date.now(), {
+                            headers: {
+                                'User-Agent': ''
+                            }
+                        });
+                        fixedRate = response.data.data.sell[0].price;
+                    }
                     // 发送结果
                     await bot.sendMessage(chatId, output + `本群费率：${rate}%\n` +
                         `本群汇率：${fixedRate}\n\n`, {

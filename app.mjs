@@ -747,6 +747,7 @@ bot.on('message', async (msg) => {
                         dailyTotalAmount = 0;
                         showldBeIssued = 0;
                         issued = 0;
+                        rate = 0;
                         unissued = 0;
                         numberofEntries = 0;
                         issueofEntries = 0;

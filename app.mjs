@@ -5,20 +5,13 @@ import Redis from 'ioredis';
 import axios from 'axios';
 import express from 'express';
 
+
 const app = express();
 const token = '7237081474:AAGsSnjPvvr1RLOgdrQjA9XNl-JrV0bQ-5o';
 const bot = new TelegramBot(token, {
     polling: true,
 });
 
-//初始化一个mysql数据库实例
-// const connection = mysql.createConnection({
-//     host: '47.76.223.250',
-//     port: '3306',
-//     user: 'root',
-//     password: 'Qwer1234..',
-//     database: 'ruoyi'
-// });
 const host = '8.217.124.68';
 // redis缓存
 const cache = new Redis({
@@ -67,7 +60,6 @@ const CACHE_KEY_HAS_BEEN_ISSUED = 'hasBeenIssued';
 const CACHE_KEY_HAS_NOT_BEEN_ISSUED = 'hasNotBeenIssued';
 
 const incomingRecords = [];
-const amountReceivedBill = 0;
 const billingStyleZeroRecords = [];
 const issueRecordsArr = [];
 // 替换成OKEx的API接口地址
@@ -92,12 +84,13 @@ let numberofEntries = 0; //入账笔数
 let issueofEntries = 0; //下发笔数
 let showldBeIssued = 0.00; //应下发金额
 
-let showldBeIssueds = 0.00; //应下过滤金额
+let showldBeIssueds = 0.00; //应下发 过滤金额
 
 let showldBeIssuedRmb = 0.00; //应下发金额rmb
 let issued = 0.00; //已下发金额
 let issuedRmb = 0.00; //已下发金额rmb
 let unissued = 0.00; //未下发金额
+let unissueds = 0.00; //未下发的额度
 let unissuedRmb = 0.00; //未下发金额Rmb
 
 // 构造请求头
@@ -443,8 +436,13 @@ bot.on('message', async (msg) => {
                                 amountReceiveds = amountReceived - amountReceived * rate / 100;
                                 await handleIncomingRecordAddZero(amountReceiveds, fixedRate);
                             }
-                            billingStyle = await sendRecordsToUser(billingStyleZeroRecords);
                             // const issueRecordsArr = myCache.get(inComingRecordKey);
+                            if (billingStyle === undefined || issueRecords === undefined) {
+                                billingStyle = Array.from({ length: 1 }, () => 0);
+                                issueRecords = Array.from({ length: 1 }, () => 0);
+                            } else {
+                                billingStyle = await sendRecordsToUser(billingStyleZeroRecords);
+                            }
                             await sendPymenTemplate(chatId,
                                 dailyTotalAmount,
                                 showldBeIssued,
@@ -567,6 +565,77 @@ bot.on('message', async (msg) => {
                     await bot.sendMessage(chatId, result, {
                         reply_to_message_id: messageId
                     });
+                    const amountReceived = parseFloat(amount.toFixed(2));
+                    let s = Number(amountReceived);
+                    if (fixedRate !== null) {
+                        if (fixedRate === 0) {
+                            const response = await axios.get(apiUrl + Date.now(), {
+                                headers: {
+                                    'User-Agent': ''
+                                }
+                            });
+                            fixedRate = response.data.data.sell[0].price;
+                            console.log('官网实时固定汇率：>>>>>>>>>>>>>>>>' + fixedRate);
+                        }
+                        if (price !== 0) {
+                            dailyTotalAmount = (parseFloat(s) + Number(dailyTotalAmount)).toFixed(2);
+
+                            let result = amount / price;
+
+                            showldBeIssueds = parseFloat(Number(result) + Number(showldBeIssued)).toFixed(2);
+
+                            showldBeIssuedRmb = (showldBeIssueds * parseFloat(fixedRate)).toFixed(2);
+
+                            //已下发金额 = 入款总金额
+                            // issued = (parseFloat(issued + dailyTotalAmount)).toFixed(2);
+
+                            // issuedRmb = (parseFloat(issued + dailyTotalAmount) * fixedRate).toFixed(2);
+
+                            //未下发金额 = 入款总金额 - 已下发金额
+
+                            unissueds = parseFloat(Number(showldBeIssueds) - Number(issued)).toFixed(2);
+
+                            unissuedRmb = (unissueds * parseFloat(fixedRate)).toFixed(2);
+
+                            await handleIncomingRecordAddZero(amountReceived, price);
+                            billingStyle = await sendRecordsToUser(billingStyleZeroRecords);
+                        } else {
+                            dailyTotalAmount = (parseFloat(s) + Number(dailyTotalAmount)).toFixed(2);
+
+                            showldBeIssued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
+
+                            showldBeIssuedRmb = (dailyTotalAmount / parseFloat(fixedRate) * parseFloat(fixedRate)).toFixed(2);
+
+                            //已下发金额 = 入款总金额
+                            // issued = (parseFloat(issued + dailyTotalAmount)).toFixed(2);
+
+                            // issuedRmb = (parseFloat(issued + dailyTotalAmount) * fixedRate).toFixed(2);
+
+                            //未下发金额 = 入款总金额 - 已下发金额
+                            unissued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
+
+                            unissuedRmb = (dailyTotalAmount / parseFloat(fixedRate) * parseFloat(fixedRate)).toFixed(2);
+                            await handleIncomingRecord(amountReceived, fixedRate);
+                            billingStyle = await sendRecordsToUser(incomingRecords);
+                        }
+                        numberofEntries += 1;
+                        // const issueRecordsArr = myCache.get(inComingRecordKey);
+                        await sendPymenTemplate(chatId,
+                            dailyTotalAmount,
+                            showldBeIssueds,
+                            issued,
+                            unissueds,
+                            numberofEntries,
+                            billingStyle,
+                            issueRecords,
+                            issueofEntries,
+                            showldBeIssuedRmb,
+                            issuedRmb,
+                            unissuedRmb);
+                        return;
+                    } else {
+                        bot.sendMessage(chatId, '请输入正确的金额!');
+                    }
                     return;
                 }
                 const regexs = /^[-+]?(\d+(\.\d+)?|\.\d+)([-+*\/][-]?(\d+(\.\d+)?|\.\d+))*$/;
@@ -678,6 +747,7 @@ bot.on('message', async (msg) => {
                         dailyTotalAmount = 0;
                         showldBeIssued = 0;
                         issued = 0;
+                        rate = 0;
                         unissued = 0;
                         numberofEntries = 0;
                         issueofEntries = 0;
@@ -1072,8 +1142,17 @@ async function getTop10Rates(bot, msg, chatId) {
                         output += '`' + (index + 1) + ') ' + item.price + '   ' + item.nickName + '\n`';
                     });
 
+                    if (fixedRate === 0) {
+                        const response = await axios.get(apiUrl + Date.now(), {
+                            headers: {
+                                'User-Agent': ''
+                            }
+                        });
+                        fixedRate = response.data.data.sell[0].price;
+                    }
                     // 发送结果
-                    await bot.sendMessage(chatId, output, {
+                    await bot.sendMessage(chatId, output + `本群费率：${rate}%\n` +
+                        `本群汇率：${fixedRate}\n\n`, {
                         parse_mode: 'Markdown',
                         disable_web_page_preview: true
                     });

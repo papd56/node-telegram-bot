@@ -256,10 +256,14 @@ bot.on('message', async (msg) => {
 
                         issuedRmb = (parseFloat(issued * fixedRate)).toFixed(2);
 
-                        //未下发金额 = 入款总金额 - 已下发金额
-                        unissued = (parseFloat(showldBeIssueds - issued)).toFixed(2);
-
-                        unissuedRmb = (parseFloat(showldBeIssueds - issued) * fixedRate).toFixed(2);
+                        if (billingStyleZeroRecords.length === 0) {
+                            unissued = 0;
+                            unissuedRmb = 0;
+                        } else {
+                            //未下发金额 = 入款总金额 - 已下发金额
+                            unissued = (parseFloat(showldBeIssueds - issued)).toFixed(2);
+                            unissuedRmb = (parseFloat(showldBeIssueds - issued) * fixedRate).toFixed(2);
+                        }
 
                         numberofEntries += 1;
                         issueofEntries += 1;

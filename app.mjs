@@ -870,19 +870,27 @@ bot.on('message', async (msg) => {
 
                 numberofEntries += 1;
                 billingStyle = await sendRecordsToUser(billingStyleZeroRecords);
-                console.log('查看格式化样式', billingStyle);
-                await sendPymenTemplate(chatId,
-                    dailyTotalAmount,
-                    showldBeIssueds,
-                    issued,
-                    unissued,
-                    numberofEntries,
-                    billingStyle,
-                    issueRecords,
-                    issueofEntries,
-                    showldBeIssuedRmb,
-                    issuedRmb,
-                    unissuedRmb);
+                if (billingStyle !== undefined) {
+                    console.log('查看格式化样式', billingStyle);
+                    await sendPymenTemplate(chatId,
+                        dailyTotalAmount,
+                        showldBeIssueds,
+                        issued,
+                        unissued,
+                        numberofEntries,
+                        billingStyle,
+                        issueRecords,
+                        issueofEntries,
+                        showldBeIssuedRmb,
+                        issuedRmb,
+                        unissuedRmb);
+                } else {
+                    await bot.sendMessage(chatId, '暂无账单数据!', {
+                        reply_to_message_id: messageId
+                    });
+                    return;
+                }
+
             }
 
         } catch (error) {

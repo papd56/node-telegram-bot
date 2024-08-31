@@ -719,7 +719,77 @@ bot.on('message', async (msg) => {
                     await bot.sendMessage(chatId, result, {
                         reply_to_message_id: messageId
                     });
-                    return;
+                    const amountReceived = parseFloat(amount.toFixed(2));
+                    let s = Number(amountReceived);
+                    if (fixedRate !== null) {
+                        if (fixedRate === 0) {
+                            const response = await axios.get(apiUrl + Date.now(), {
+                                headers: {
+                                    'User-Agent': ''
+                                }
+                            });
+                            fixedRate = response.data.data.sell[0].price;
+                            console.log('官网实时固定汇率：>>>>>>>>>>>>>>>>' + fixedRate);
+                        }
+                        if (price !== 0) {
+                            dailyTotalAmount = (parseFloat(s) + Number(dailyTotalAmount)).toFixed(2);
+
+                            let result = amount / price;
+
+                            showldBeIssueds = parseFloat(Number(showldBeIssued) + Number(result)).toFixed(2);
+
+                            showldBeIssuedRmb = (showldBeIssueds * parseFloat(fixedRate)).toFixed(2);
+
+                            //已下发金额 = 入款总金额
+                            // issued = (parseFloat(issued + dailyTotalAmount)).toFixed(2);
+
+                            // issuedRmb = (parseFloat(issued + dailyTotalAmount) * fixedRate).toFixed(2);
+
+                            //未下发金额 = 入款总金额 - 已下发金额
+
+                            unissueds = parseFloat(Number(showldBeIssueds) - Number(issued) + Number(result)).toFixed(2);
+
+                            unissuedRmb = (unissueds * parseFloat(fixedRate)).toFixed(2);
+
+                            await handleIncomingRecordAddZero(amountReceived, price);
+                            billingStyle = await sendRecordsToUser(billingStyleZeroRecords);
+                        } else {
+                            dailyTotalAmount = (parseFloat(s) + Number(dailyTotalAmount)).toFixed(2);
+
+                            showldBeIssued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
+
+                            showldBeIssuedRmb = (dailyTotalAmount / parseFloat(fixedRate) * parseFloat(fixedRate)).toFixed(2);
+
+                            //已下发金额 = 入款总金额
+                            // issued = (parseFloat(issued + dailyTotalAmount)).toFixed(2);
+
+                            // issuedRmb = (parseFloat(issued + dailyTotalAmount) * fixedRate).toFixed(2);
+
+                            //未下发金额 = 入款总金额 - 已下发金额
+                            unissued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
+
+                            unissuedRmb = (dailyTotalAmount / parseFloat(fixedRate) * parseFloat(fixedRate)).toFixed(2);
+                            await handleIncomingRecord(amountReceived, fixedRate);
+                            billingStyle = await sendRecordsToUser(incomingRecords);
+                        }
+                        numberofEntries += 1;
+                        // const issueRecordsArr = myCache.get(inComingRecordKey);
+                        await sendPymenTemplate(chatId,
+                            dailyTotalAmount,
+                            showldBeIssueds,
+                            issued,
+                            unissueds,
+                            numberofEntries,
+                            billingStyle,
+                            issueRecords,
+                            issueofEntries,
+                            showldBeIssuedRmb,
+                            issuedRmb,
+                            unissuedRmb);
+                        return;
+                    } else {
+                        bot.sendMessage(chatId, '请输入正确的金额!');
+                    }
                 }
                 const regexs = /^[-+]?(\d+(\.\d+)?|\.\d+)([-+*\/][-]?(\d+(\.\d+)?|\.\d+))*$/;
                 if (messageText.match(regexs)) {

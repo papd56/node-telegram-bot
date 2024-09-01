@@ -249,12 +249,12 @@ bot.on('message', async (msg) => {
                         showldBeIssueds = showldBeIssued;
                         // showldBeIssued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
 
-                        showldBeIssuedRmb = (dailyTotalAmount / parseFloat(fixedRate) * parseFloat(fixedRate)).toFixed(2);
+                        showldBeIssuedRmb = Math.floor((parseFloat(showldBeIssueds * fixedRate)));
 
                         //已下发金额 = 入款总金额
                         issued += s;
 
-                        issuedRmb = (parseFloat(issued * fixedRate)).toFixed(2);
+                        issuedRmb = Math.floor((parseFloat(issued * fixedRate)));
 
                         if (billingStyleZeroRecords.length === 0) {
                             unissued = 0;
@@ -262,7 +262,7 @@ bot.on('message', async (msg) => {
                         } else {
                             //未下发金额 = 入款总金额 - 已下发金额
                             unissued = (parseFloat(showldBeIssueds - issued)).toFixed(2);
-                            unissuedRmb = (parseFloat(showldBeIssueds - issued) * fixedRate).toFixed(2);
+                            unissuedRmb = Math.floor((parseFloat(showldBeIssueds - issued) * fixedRate));
                         }
 
                         numberofEntries += 1;

@@ -2,7 +2,7 @@ import TelegramBot from 'node-telegram-bot-api';
 import Redis from 'ioredis';
 
 // redis缓存
-const host = '8.217.124.68';
+const host = 'localhost';
 const cache = new Redis({
   host: host,
   port: 6380,
@@ -47,7 +47,18 @@ cache.on('error', (error) => {
   console.error('redis error:', error);
 });
 
-const token = '7527546955:AAHZ_9wREC2hLVq39lCEYn_H8y-5lm_L6I0';
+const scanKeys = async (pattern) => {
+  const keys = [];
+  let cursor = 0;
+  do {
+    const res = await cache.scan(cursor, 'MATCH', pattern);
+    cursor = res[0];
+    keys.push(...res[1]);
+  } while (cursor !== '0');
+  return keys;
+};
+
+const token = '7312820802:AAE_WXdULOIXTFg3-9PDTImdLnExjnd408c';
 
 const bot = new TelegramBot(token, {
   polling: true,

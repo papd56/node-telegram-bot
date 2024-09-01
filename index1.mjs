@@ -7,7 +7,7 @@ import checkifUserIsAdmin from './adminCheck.mjs';
 async function fetchData(path, data) {
   let options = {
     hostname: '127.0.0.1',
-    port: 8899,
+    port: 8080,
     path: path,
     method: 'POST',
     headers: {
@@ -40,6 +40,7 @@ const cache = new Redis({
   host: '127.0.0.1',
   port: 6380,
   db: 0,
+  password: 123456,
   retryStrategy: (options) => {
     if (options.error && options.error.code === 'ECONNREFUSED') {
       // Handle ECONNREFUSED differently
@@ -90,7 +91,7 @@ const scanKeys = async (pattern) => {
   return keys;
 };
 
-const token = '7248031090:AAGzO1PZnSp4zc717AKLYhusQeO1wluJt2I';
+const token = '7000447729:AAGqaBj7sVj1D_13cKnajE-UOLl1QR6WvGY';
 
 const bot = new TelegramBot(token, {
   polling: true,
@@ -215,7 +216,12 @@ bot.on('message', async (msg) => {
           let now = Date.now();
           let time = await cache.get('time:' + chatId + '_' + messageText);
           if (time === null || now - time >= 300000) {
-            await sendMessage(chatId, messageId, messageText).then( async () => {
+            let value = await cache.get('promote:' + messageText);
+            await bot.sendMessage(chatId, JSON.parse(JSON.parse(value)).content.replace('@hwgq','[@hwgq](https://t.me/hwgqpindao)'), {
+              reply_to_message_id: messageId,
+              parse_mode: 'Markdown',
+              disable_web_page_preview: true
+            }).then( async () => {
               await cache.set('time:' + chatId + '_' + messageText, now);
             });
           }
@@ -244,7 +250,12 @@ bot.on('message', async (msg) => {
             }else if (messageText === '下课') {
               //设置全员禁言
               await bot.setChatPermissions(chatId, { can_send_messages: false });
-              await sendMessage(chatId, messageId, messageText);
+              let value = await cache.get('promote:' + messageText);
+              await bot.sendMessage(chatId, JSON.parse(JSON.parse(value)).content.replace('@hwdb','[@hwdb](https://t.me/hwdbwbot)'), {
+                reply_to_message_id: messageId,
+                parse_mode: 'Markdown',
+                disable_web_page_preview: true
+              });
             }
 
             if (admin) {
@@ -471,25 +482,5 @@ bot.on('message', async (msg) => {
       console.error(error);
       return false;
     }
-  }
-});
-
-let reconnectAttempts = 0;
-const maxReconnectAttempts = 5;
-const initialRetryDelay = 2000; // 2秒
-
-bot.on('polling_error', (error) => {
-  console.error('Polling error:', error);
-  reconnectAttempts++;
-
-  if (reconnectAttempts > maxReconnectAttempts) {
-    console.error('Maximum reconnect attempts reached, exiting...');
-  } else {
-    const retryDelay = initialRetryDelay * 2 ** (reconnectAttempts - 1);
-    console.log(`Retrying in ${retryDelay} milliseconds...`);
-    setTimeout(() => {
-      bot.startPolling();
-      reconnectAttempts = 0;
-    }, retryDelay);
   }
 });

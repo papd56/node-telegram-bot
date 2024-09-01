@@ -369,7 +369,7 @@ bot.on('message', async (msg) => {
                 }
             }
 
-            if (messageText === '开始记账') {
+            if (messageText === '开始记账' || messageText === '开始') {
                 bot.sendMessage(chatId, '记账功能开始工作');
             }
 
@@ -751,7 +751,7 @@ bot.on('message', async (msg) => {
 
                             //未下发金额 = 入款总金额 - 已下发金额
 
-                            unissueds = parseFloat(Number(showldBeIssueds)).toFixed(2);
+                            unissueds = parseFloat(Number(showldBeIssueds) - Number(issued) + Number(result)).toFixed(2);
 
                             unissuedRmb = (unissueds * parseFloat(fixedRate)).toFixed(2);
 

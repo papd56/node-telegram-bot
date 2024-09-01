@@ -845,7 +845,7 @@ bot.on('message', async (msg) => {
                 console.error('操作删除账单错误', error);
                 throw error;
             }
-            if (messageText.startsWith('显示账单') || messageText === '账单') {
+            if (messageText.startsWith('显示账单')) {
 
                 let s = Number(issued);
                 if (fixedRate === 0) {

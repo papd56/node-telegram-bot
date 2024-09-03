@@ -3,8 +3,32 @@ import checkifUserIsAdmin from './adminCheck.mjs';
 import { DateTime } from 'luxon';
 import Redis from 'ioredis';
 import axios from 'axios';
+import http from 'http';
 import express from 'express';
 
+async function fetchData(path, data) {
+    let options = {
+        hostname: '127.0.0.1',
+        port: 8898,
+        path: path,
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    };
+    let req = http.request(options, (res) => {
+        // 不处理响应数据
+    });
+    req.on('error', (error) => {
+        console.error(error);
+    });
+    req.write(data);
+    req.end();
+}
+
+async function post(path, data) {
+    return await axios.post('http://localhost:8898' + path, data);
+}
 
 const app = express();
 const token = '7237081474:AAGsSnjPvvr1RLOgdrQjA9XNl-JrV0bQ-5o';
@@ -16,7 +40,7 @@ const host = '8.217.124.68';
 // redis缓存
 const cache = new Redis({
     host: host,
-    port: 6379,
+    port: 6380,
     db: 0,
     password: 123456,
     retryStrategy: (options) => {
@@ -76,6 +100,9 @@ let billingStyleZero = [];
 let newRecords = [];
 
 
+//加钱下发结果
+let results = 0.00;
+let resultAdd = 0.00;
 let fixedRate = 0.00; //全局变量汇率
 let rate = 0.00; //全局变量费率
 
@@ -246,7 +273,10 @@ bot.on('message', async (msg) => {
                             });
                             fixedRate = response.data.data.sell[0].price;
                         }
-                        showldBeIssueds = showldBeIssued;
+                        //取出入款的缓存中的应下发金额
+                        const newVar1 = await cache.get('showldBeIssueds:' + chatId);
+
+                        showldBeIssueds = newVar1;
                         // showldBeIssued = (dailyTotalAmount / parseFloat(fixedRate)).toFixed(2);
 
                         showldBeIssuedRmb = Math.floor((parseFloat(showldBeIssueds * fixedRate)));
@@ -536,6 +566,7 @@ bot.on('message', async (msg) => {
                             }
 
                             billingStyle = await sendRecordsToUser(billingStyleZeroRecords);
+                            console.log(billingStyleZeroRecords)
                             // const issueRecordsArr = myCache.get(inComingRecordKey);
                             await sendPymenTemplate(chatId,
                                 dailyTotalAmount,
@@ -584,9 +615,11 @@ bot.on('message', async (msg) => {
                         if (price !== 0) {
                             dailyTotalAmount = (parseFloat(s) + Number(dailyTotalAmount)).toFixed(2);
 
-                            let result = amount / price;
-
-                            showldBeIssueds = parseFloat(Number(result) + Number(showldBeIssued)).toFixed(2);
+                            resultAdd += Math.floor(amount / price);
+                            // results = Math.floor(Number(showldBeIssued) + Number(result));
+                            showldBeIssueds = parseFloat(Number(showldBeIssued) + Number(resultAdd)).toFixed(2);
+                            //应下发金额存入缓存
+                            await cache.set('showldBeIssueds:' + chatId, showldBeIssueds);
 
                             showldBeIssuedRmb = (showldBeIssueds * parseFloat(fixedRate)).toFixed(2);
 
@@ -1077,8 +1110,9 @@ async function handleIncomingRecordAddZero(amountReceived, fixedRate) {
         fixedRate: fixedRate,
         convertedAmount: convertedAmount,
     };
-
     billingStyleZeroRecords.unshift(incomingRecord);
+
+
 }
 
 
@@ -1095,7 +1129,6 @@ async function handleIssueRecords(amountReceived, fixedRate) {
         fixedRate: fixedRate,
         convertedAmount: convertedAmount,
     };
-
     issueRecordsArr.unshift(incomingRecord);
 }
 
@@ -1147,7 +1180,22 @@ async function issueFormatRecordText(records) {
         'zh-CN',
         options
     );
-    const foormatRecordText = `${timestamp} ${records.amountReceived} * ${records.fixedRate} = ${records.convertedAmount}(RMB)`;
+    const amount = Math.floor(records.amountReceived * records.fixedRate);
+
+    const foormatRecordText = `${timestamp} ${records.amountReceived}(${amount})`;
+    // let orderInfo = [];
+    // orderInfo.push({
+    //     amountReceived: records.amountReceived,
+    //     fixedRate: records.fixedRate,
+    //     orderInfo: foormatRecordText
+    // });
+    // await post('/billing/management/add', orderInfo);
+    const formData = new FormData();
+    formData.append('amountReceived', records.amountReceived);
+    formData.append('fixedRate', records.fixedRate);
+    formData.append('orderInfo', foormatRecordText);
+
+    await post('/billing/management/add', formData);
     return foormatRecordText;
 
 }
@@ -1163,6 +1211,12 @@ async function formatRecordText(records) {
         options
     );
     const foormatRecordText = `${timestamp} ${records.amountReceived} / ${records.fixedRate} = ${records.convertedAmount}`;
+    const formData = new FormData();
+    formData.append('amountReceived', records.amountReceived);
+    formData.append('fixedRate', records.fixedRate);
+    formData.append('orderInfo', foormatRecordText);
+
+    await post('/billing/management/add', formData);
     return foormatRecordText;
 
 }

@@ -11,16 +11,17 @@ NodeJieba.load({
 });
 
 async function post(path, data) {
-  return await axios.post('http://localhost:8897' + path, data);
+  return await axios.post('http://127.0.0.1:8897' + path, data);
 }
 
 await post('/redisCache/list');
 
 // redis缓存
 const cache = new Redis({
-  host: 'localhost',
-  port: 6379,
+  host: '127.0.0.1',
+  port: 6380,
   db: 0,
+  password: 123456,
   retryStrategy: (options) => {
     if (options.error && options.error.code === 'ECONNREFUSED') {
       // Handle ECONNREFUSED differently
@@ -60,7 +61,7 @@ cache.on('error', (error) => {
   console.error('redis error:', error);
 });
 
-const token = '7269675720:AAEEkkXm30WMsjR4ZWysHDPQTQeym0aUX-Y';
+const token = '7121880748:AAEP9zGTcYTyAeKv2u5k9PJkZdOZoS8f-eA';
 
 const bot = new TelegramBot(token, {
   polling: true,

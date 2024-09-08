@@ -31,7 +31,7 @@ async function post(path, data) {
 }
 
 const app = express();
-const token = '7237081474:AAGsSnjPvvr1RLOgdrQjA9XNl-JrV0bQ-5o';
+const token = '7512501553:AAHzZQpAZSLiiowXKz0h1vVn-SXrB0v4HS4';
 const bot = new TelegramBot(token, {
     polling: true,
 });

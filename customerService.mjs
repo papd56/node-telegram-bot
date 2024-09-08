@@ -5,7 +5,7 @@ import Redis from 'ioredis';
 const host = 'localhost';
 const cache = new Redis({
   host: host,
-  port: 6379,
+  port: 6380,
   db: 0,
   password: 123456,
   retryStrategy: (options) => {
@@ -157,14 +157,8 @@ bot.on('callback_query', async (msg) => {
     let customer = await cache.hgetall(`customer:${chatId}`);
     // 客服结束聊天
     if (customer && customer.staff) {
-      // 编辑消息，删除内联键盘
-      await bot.editMessageReplyMarkup({}, {
-        chat_id: chatId,
-        message_id: msg.message.message_id
-      }).then(async () => {
-        await bot.sendMessage(chatId, `感谢您对本次服务做出的宝贵评价。`);
-        await bot.sendMessage(customer.staff, `客户对本次服务做出${data}评价。`);
-      });
+      await bot.sendMessage(chatId, `感谢您对本次服务做出的宝贵评价。`);
+      await bot.sendMessage(customer.staff, `客户对本次服务做出${data}评价。`);
       let pipeline = cache.pipeline();
       await pipeline.hdel(`staff:${customer.staff}`, 'customer', 'biz');
       await pipeline.hdel(`customerLastMessage`, chatId);

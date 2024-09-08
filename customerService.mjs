@@ -43,7 +43,7 @@ const cache = new Redis({
   idleTimeout: 60000
 });
 
-const token = '7130334331:AAHquum6IOQWikJLfaofZK3hc1Bt1o2rYIU';
+const token = '6755005381:AAEFiThX6x56t90TtWxYpwNU-J9JI-dpS1Y';
 
 const bot = new TelegramBot(token, {
   polling: true,

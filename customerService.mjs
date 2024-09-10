@@ -417,21 +417,25 @@ setInterval(async () => {
         if (Date.now() - customerLastMessage[key] > 1200000) {
           await bot.sendMessage(key, '由于您长时间未操作，客服服务已超时中止，感谢您的使用。');
           let customer = await cache.hgetall(`customer:${key}`);
-          let pipeline = cache.pipeline();
-          await pipeline.hdel(`staff:${customer.staff}`, 'customer', 'biz');
-          await pipeline.del(`customer:${key}`);
-          await pipeline.del(`staffMessages:${customer.staff}`);
-          await pipeline.del(`customerMessages:${key}`);
-          await pipeline.sadd(`idleStaff:${customer.biz}`, customer.staff);
-          await pipeline.exec((error, replies) => {
-            if (error) {
-              console.error('pipeline error:' + error);
+          if (customer.biz) {
+            let pipeline = cache.pipeline();
+            await pipeline.hdel(`staff:${customer.staff}`, 'customer', 'biz');
+            await pipeline.del(`staffMessages:${customer.staff}`);
+            if (customer.staff) {
+              await bot.sendMessage(customer.staff, '由于客户长时间未操作，客服服务已超时中止，评价默认为10分');
+              await pipeline.del(`customer:${key}`);
+              await pipeline.del(`customerMessages:${key}`);
+              await pipeline.hdel(`customerLastMessage`, key);
+              await pipeline.sadd(`idleStaff:${customer.biz}`, customer.staff);
             }
-          })
-          await bot.sendMessage(customer.staff, '由于客户长时间未操作，客服服务已超时中止，评价默认为10分');
-          await cache.hdel('customerLastMessage', key);
+            await pipeline.exec((error, replies) => {
+              if (error) {
+                console.error('pipeline error:' + error);
+              }
+            })
+          }
         }
       }
     }
   });
-}, 60000);
+}, 600000);

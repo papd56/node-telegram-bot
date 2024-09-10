@@ -104,9 +104,9 @@ async function assignStaff(chatId, biz) {
 async function forwardMessage(msg, biz) {
   const chatId = msg.chat.id;
   const customer = await cache.hgetall(`customer:${chatId}`);
-  if (customer && customer.staff && customer.biz === biz) {
+  if (customer.staff && customer.biz === biz) {
     await bot.sendMessage(chatId, `${biz}已有人工坐席客服，在和您对接...`);
-  }else if (customer && customer.staff) {
+  }else if (customer.staff) {
     // await bot.sendMessage(chatId, `${customer.biz}已有人工坐席客服，在和您对接...`);
 /*     let pipeline = cache.pipeline();
     await pipeline.hdel(`staff:${customer.staff}`, 'customer');
@@ -138,7 +138,7 @@ bot.on('callback_query', async (msg) => {
   if (data === '结束对话') {
     let staff = await cache.hgetall(`staff:${chatId}`);
     // 客服结束聊天
-    if (staff && staff.customer) {
+    if (staff.customer) {
       await bot.sendMessage(staff.customer, '客服已结束聊天，感谢您的使用，请您对本次服务做出评价。', {
         reply_markup: {
           inline_keyboard: [
@@ -156,7 +156,7 @@ bot.on('callback_query', async (msg) => {
   }else if (data === '3分' || data === '5分' || data === '10分') {
     let customer = await cache.hgetall(`customer:${chatId}`);
     // 客服结束聊天
-    if (customer && customer.staff) {
+    if (customer.staff) {
       await bot.sendMessage(chatId, `感谢您对本次服务做出的宝贵评价。`);
       await bot.sendMessage(customer.staff, `客户对本次服务做出${data}评价。`);
       let pipeline = cache.pipeline();
@@ -187,36 +187,43 @@ bot.on('callback_query', async (msg) => {
       }
     });
   }else if (data === '转接拉专群' || data === '转接开公群' || data === '转接纠纷仲裁' || data === '转接投诉与建议' || data === '转接买广告解封') {
-    let staff = await cache.hgetall(`staff:${chatId}`);
-    if (staff && staff.customer) {
-      let pipeline = cache.pipeline();
-      await pipeline.hdel(`staff:${chatId}`, 'customer', 'biz');
-      await pipeline.del(`staffMessages:${chatId}`);
-      await pipeline.del(`customerMessages:${staff.customer}`);
-      await pipeline.sadd(`idleStaff:${staff.biz}`, chatId);
-      await pipeline.exec((error, replies) => {
-        if (error) {
-          console.error('pipeline error:' + error);
+    cache.exists(`idleStaff:${data.substring(2)}`).then(async (exists) => {
+      if (exists) {
+        let staff = await cache.hgetall(`staff:${chatId}`);
+        if (staff.customer) {
+          let pipeline = cache.pipeline();
+          await pipeline.hdel(`staff:${chatId}`, 'customer', 'biz');
+          await pipeline.del(`staffMessages:${chatId}`);
+          await pipeline.del(`customerMessages:${staff.customer}`);
+          await pipeline.sadd(`idleStaff:${staff.biz}`, chatId);
+          await pipeline.exec((error, replies) => {
+            if (error) {
+              console.error('pipeline error:' + error);
+            }
+          }).then(async () => {
+            data = data.substring(2);
+            await assignStaff(staff.customer, data).then(async (staffId) => {
+              if (staffId) {
+                await bot.sendMessage(chatId, `已转接 ${data}客服。`);
+                await bot.sendMessage(staff.customer, `已转接 ${data}客服。`);
+                await bot.sendMessage(staffId, `${data}客服已将客户转接给您。`);
+              }
+            });
+          });
+        }else {
+          await bot.sendMessage(chatId, `您目前没有客户需要转接。`);
         }
-      }).then(async () => {
-        data = data.substring(2);
-        await assignStaff(staff.customer, data).then(async (staffId) => {
-          if (staffId) {
-            await bot.sendMessage(chatId, `已转接 ${data}客服。`);
-            await bot.sendMessage(staff.customer, `已转接 ${data}客服。`);
-            await bot.sendMessage(staffId, `${data}客服已将客户转接给您。`);
-          }
-        });
-      });
-    }else {
-      await bot.sendMessage(chatId, `您目前没有客户需要转接。`);
-    }
+      } else {
+        await bot.sendMessage(chatId, `该业务没有空闲客服，无法转接。`);
+        return true;
+      }
+    });
   }else if (data === '拉专群' || data === '开公群' || data === '纠纷仲裁' || data === '投诉与建议' || data === '买广告解封') {
     let exists = await cache.exists(`staff:${chatId}`) || cache.sismember(`idleStaff:${data}`, chatId) === 1;
     if (!exists) {
       // 用户选择业务板块
       let pipeline = cache.pipeline();
-      await pipeline.hset(`staff:${chatId}`, 'biz', data);
+      await pipeline.hset(`staff:${chatId}`, 'service', data);
       await pipeline.hset(`staff:${chatId}`, 'chatId', chatId);
       await pipeline.hset(`staff:${chatId}`, 'username', msg.from.username);
       await pipeline.hset(`staff:${chatId}`, 'firstName', msg.from.first_name);
@@ -276,53 +283,77 @@ bot.on('message', async (msg) => {
     });
   } else if (text) {
     let staff = await cache.hgetall(`staff:${chatId}`);
-    if (staff && staff.customer) {
-      if (text === '结束') {
-        // 客服结束聊天
-        if (staff && staff.customer) {
-          await bot.sendMessage(staff.customer, '客服已结束聊天，感谢您的使用，请您对本次服务做出评价。', {
-            reply_markup: {
-              inline_keyboard: [
-                [
-                  { text: '3分', callback_data: '3分' },
-                  { text: '5分', callback_data: '5分' },
-                  { text: '10分', callback_data: '10分' },
-                ]
-              ]
-            }
-          });
-/*           let pipeline = cache.pipeline();
-          await pipeline.hdel(`staff:${chatId}`, 'customer', 'biz');
+    if (staff.chatId) {
+      if (text === 'quxiaobangdingbot') {
+        let pipeline = cache.pipeline();
+        await pipeline.del(`staff:${chatId}`);
+        await pipeline.del(`staffMessages:${chatId}`);
+        if (staff.customer) {
           await pipeline.del(`customer:${staff.customer}`);
-          await pipeline.del(`staffMessages:${chatId}`);
           await pipeline.del(`customerMessages:${staff.customer}`);
-          await pipeline.sadd(`idleStaff:${staff.biz}`, chatId);
-          await pipeline.exec((error, replies) => {
-            if (error) {
-              console.error('pipeline error:' + error);
-            }
-          }); */
         }
-      }else {
-        // 客服回复，转发给用户
-        let message;
-        if (msg.reply_to_message) {
-          let messageId = await cache.hget(`customerMessages:${staff.customer}`, msg.reply_to_message.message_id);
-          message = await bot.sendMessage(staff.customer, `*${staff.biz}客服*：\n` + text, {
-            reply_to_message_id: messageId,
-            parse_mode: 'Markdown',
+        await pipeline.srem(`idleStaff:${staff.service}`, chatId);
+        await pipeline.exec((error, replies) => {
+          if (error) {
+            console.error('pipeline error:' + error);
+          }
+        }).then(async () => {
+          await bot.sendMessage(chatId, `您已与${staff.service === '拉专群' || staff.service === '开公群' ? staff.service.substring(1) : staff.service}客服脱离！感谢您今天一天辛勤的工作！致敬每位辛苦的客服😇`, {
+            reply_to_message_id: msg.message_id,
           });
+        });
+      } else if (text === 'chakanbot' && staff.service) {
+        await bot.sendMessage(chatId, `您所在的岗位是${staff.service === '拉专群' || staff.service === '开公群' ? staff.service.substring(1) : staff.service}客服！`, {
+          reply_to_message_id: msg.message_id,
+        });
+      } else if (staff.customer) {
+        if (text === '结束') {
+          // 客服结束聊天
+          if (staff.customer) {
+            await bot.sendMessage(staff.customer, '客服已结束聊天，感谢您的使用，请您对本次服务做出评价。', {
+              reply_markup: {
+                inline_keyboard: [
+                  [
+                    { text: '3分', callback_data: '3分' },
+                    { text: '5分', callback_data: '5分' },
+                    { text: '10分', callback_data: '10分' },
+                  ]
+                ]
+              }
+            });
+            /*           let pipeline = cache.pipeline();
+                      await pipeline.hdel(`staff:${chatId}`, 'customer', 'biz');
+                      await pipeline.del(`customer:${staff.customer}`);
+                      await pipeline.del(`staffMessages:${chatId}`);
+                      await pipeline.del(`customerMessages:${staff.customer}`);
+                      await pipeline.sadd(`idleStaff:${staff.biz}`, chatId);
+                      await pipeline.exec((error, replies) => {
+                        if (error) {
+                          console.error('pipeline error:' + error);
+                        }
+                      }); */
+          }
         }else {
-          message = await bot.sendMessage(staff.customer, `*${staff.biz}客服*：\n` + text, {
-            parse_mode: 'Markdown',
-          });
+          // 客服回复，转发给用户
+          let message;
+          if (msg.reply_to_message) {
+            let messageId = await cache.hget(`customerMessages:${staff.customer}`, msg.reply_to_message.message_id);
+            message = await bot.sendMessage(staff.customer, `*${staff.biz}客服*：\n` + text, {
+              reply_to_message_id: messageId,
+              parse_mode: 'Markdown',
+            });
+          }else {
+            message = await bot.sendMessage(staff.customer, `*${staff.biz}客服*：\n` + text, {
+              parse_mode: 'Markdown',
+            });
+          }
+          await cache.hset(`staffMessages:${chatId}`, message.message_id, msg.message_id);
+          await cache.hset(`customerMessages:${staff.customer}`, msg.message_id, message.message_id);
         }
-        await cache.hset(`staffMessages:${chatId}`, message.message_id, msg.message_id);
-        await cache.hset(`customerMessages:${staff.customer}`, msg.message_id, message.message_id);
       }
     } else {
       let customer = await cache.hgetall(`customer:${chatId}`);
-      if (customer && customer.staff) {
+      if (customer.staff) {
         // 用户回复，转发给客服
         let message;
         if (msg.reply_to_message) {
@@ -357,7 +388,7 @@ bot.on('message', async (msg) => {
     }
   } else if (msg.pinned_message) {
     let staff = await cache.hgetall(`staff:${chatId}`);
-    if (staff && staff.customer) {
+    if (staff.customer) {
       // 客服置顶后将消息id转为客户方消息id并置顶
       await cache.hget(`customerMessages:${staff.customer}`, msg.pinned_message.message_id).then(async messageId => {
         if (messageId) {
@@ -366,7 +397,7 @@ bot.on('message', async (msg) => {
       });
     } else {
       let customer = await cache.hgetall(`customer:${chatId}`);
-      if (customer && customer.staff) {
+      if (customer.staff) {
         // 客户置顶后将消息id转为客服方消息id并置顶
         await cache.hget(`staffMessages:${customer.staff}`, msg.pinned_message.message_id).then(async messageId => {
           if (messageId) {

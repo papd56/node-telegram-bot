@@ -291,6 +291,7 @@ bot.on('message', async (msg) => {
         if (staff.customer) {
           await pipeline.del(`customer:${staff.customer}`);
           await pipeline.del(`customerMessages:${staff.customer}`);
+          await pipeline.hdel(`customerLastMessage`, staff.customer);
         }
         await pipeline.srem(`idleStaff:${staff.service}`, chatId);
         await pipeline.exec((error, replies) => {
@@ -338,13 +339,13 @@ bot.on('message', async (msg) => {
           let message;
           if (msg.reply_to_message) {
             let messageId = await cache.hget(`customerMessages:${staff.customer}`, msg.reply_to_message.message_id);
-            message = await bot.sendMessage(staff.customer, `*${staff.biz}客服*：\n` + text, {
+            message = await bot.sendMessage(staff.customer, `<b>${staff.biz}客服</b>：\n${text}`, {
               reply_to_message_id: messageId,
-              parse_mode: 'Markdown',
+              parse_mode: 'HTML',
             });
           }else {
-            message = await bot.sendMessage(staff.customer, `*${staff.biz}客服*：\n` + text, {
-              parse_mode: 'Markdown',
+            message = await bot.sendMessage(staff.customer, `<b>${staff.biz}客服</b>：\n${text}`, {
+              parse_mode: 'HTML',
             });
           }
           await cache.hset(`staffMessages:${chatId}`, message.message_id, msg.message_id);
@@ -419,20 +420,22 @@ setInterval(async () => {
           let customer = await cache.hgetall(`customer:${key}`);
           if (customer.biz) {
             let pipeline = cache.pipeline();
-            await pipeline.hdel(`staff:${customer.staff}`, 'customer', 'biz');
-            await pipeline.del(`staffMessages:${customer.staff}`);
             if (customer.staff) {
               await bot.sendMessage(customer.staff, '由于客户长时间未操作，客服服务已超时中止，评价默认为10分');
-              await pipeline.del(`customer:${key}`);
-              await pipeline.del(`customerMessages:${key}`);
-              await pipeline.hdel(`customerLastMessage`, key);
+              await pipeline.hdel(`staff:${customer.staff}`, 'customer', 'biz');
+              await pipeline.del(`staffMessages:${customer.staff}`);
               await pipeline.sadd(`idleStaff:${customer.biz}`, customer.staff);
             }
+            await pipeline.del(`customer:${key}`);
+            await pipeline.del(`customerMessages:${key}`);
+            await pipeline.hdel(`customerLastMessage`, key);
             await pipeline.exec((error, replies) => {
               if (error) {
                 console.error('pipeline error:' + error);
               }
             })
+          } else {
+            await cache.hdel(`customerLastMessage`, key);
           }
         }
       }

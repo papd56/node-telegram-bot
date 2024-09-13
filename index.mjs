@@ -61,7 +61,7 @@ cache.on('error', (error) => {
   console.error('redis error:', error);
 });
 
-const token = '7121880748:AAEP9zGTcYTyAeKv2u5k9PJkZdOZoS8f-eA';
+const token = "7269675720:AAEEkkXm30WMsjR4ZWysHDPQTQeym0aUX-Y";
 
 const bot = new TelegramBot(token, {
   polling: true,
@@ -267,6 +267,14 @@ bot.on('message', async (msg) => {
                     });
                     await sendMessage(chatId, messageId, messageText);
                     return true;
+                  }else if (messageText === '设置公群头像') {
+                    // 确保消息包含图片
+                    if (replyMessage.photo) {
+                      // 使用setChatPhoto方法设置群头像，传入最后一张最大尺寸的图片photoStream作为photo参数
+                      bot.setChatPhoto(chatId, bot.getFileStream(replyMessage.photo.pop().file_id)).catch((error) => {
+                        console.error('设置群头像失败：', error);
+                      });
+                    }
                   }
                 } else {
                   if (messageText.startsWith('禁言 @')) {

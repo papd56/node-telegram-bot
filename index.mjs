@@ -113,7 +113,7 @@ setInterval(async () => {
       });
     }
   }
-}, 1800000);
+}, 10800000);
 
 // Listen for new chat members
 bot.on('new_chat_members', async (msg) => {
@@ -352,6 +352,24 @@ bot.on('message', async (msg) => {
                     }
                     await sendMessage(chatId, messageId, '移除管理');
                     return true;
+                  }else if (messageText.startsWith('设置广告') && messageText.length > 4) {
+                    let group = await cache.hget('group', chatId);
+                    group = JSON.parse(JSON.parse(group));
+                    group.groupWelcome = messageText.substring(4);
+                    await post('/bot/group/editGroup', group);
+                    await sendMessage(chatId, messageId, '设置广告');
+                  }else if (messageText.startsWith('修改广告') && messageText.length > 4) {
+                    let group = await cache.hget('group', chatId);
+                    group = JSON.parse(JSON.parse(group));
+                    group.groupWelcome = messageText.substring(4);
+                    await post('/bot/group/editGroup', group);
+                    await sendMessage(chatId, messageId, '修改广告');
+                  }else if (messageText === '关闭广告') {
+                    let group = await cache.hget('group', chatId);
+                    group = JSON.parse(JSON.parse(group));
+                    group.groupWelcome = '';
+                    await post('/bot/group/editGroup', group);
+                    await sendMessage(chatId, messageId, '关闭广告');
                   }else if (messageText.startsWith('设置欢迎语') && messageText.length > 5) {
                     let group = await cache.hget('group', chatId);
                     group = JSON.parse(JSON.parse(group));

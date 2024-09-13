@@ -185,14 +185,6 @@ bot.on('message', async (msg) => {
               await cache.set('time:' + chatId + '_' + messageText, now);
             });
           }
-        }else if (/^\d+$/.test(messageText)) {
-          await post('/bot/group/grouplist', { groupName: '公群' + messageText + ' ' }).then(async (data) => {
-            if (data.data.total > 0) {
-              await bot.sendMessage(chatId, data.data.rows[0].groupUrl, {
-                reply_to_message_id: messageId,
-              });
-            }
-          });
         }else {
           let admin = await cache.exists('admin:' + userId);
           let isAdmin = await checkifUserIsAdmin(bot, msg);
@@ -276,6 +268,14 @@ bot.on('message', async (msg) => {
                       can_promote_members: false     // 添加管理员
                     });
                     await sendMessage(chatId, messageId, messageText);
+                  }else if (messageText === '设置公群头像') {
+                    // 确保消息包含图片
+                    if (replyMessage.photo) {
+                      // 使用setChatPhoto方法设置群头像，传入最后一张最大尺寸的图片photoStream作为photo参数
+                      bot.setChatPhoto(chatId, bot.getFileStream(replyMessage.photo.pop().file_id)).catch((error) => {
+                        console.error('设置群头像失败：', error);
+                      });
+                    }
                   }
                 } else {
                   if (messageText.startsWith('禁言 @')) {

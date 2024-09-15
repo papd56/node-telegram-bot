@@ -505,7 +505,13 @@ bot.on('message', async (msg) => {
           }
         }
       } else {
-        if (messageText && /^\d+$/.test(messageText)) {
+        if (messageText === '/start') {
+          await bot.sendMessage(chatId, '这里是欧意公群机器人\n' +
+            '欧易公群 @oydbgq\n' +
+            '欧易上押流程 @OKXSYLC\n' +
+            '验群，私聊我发送公群编号或者私聊你想要的业务，例如【白资、承兑、劳务】');
+          return true;
+        }else if (messageText && /^\d+$/.test(messageText)) {
           await post('/bot/group/groupList', { groupName: '公群' + messageText + ' ' }).then(async (data) => {
             if (data.data.total > 0) {
               await bot.sendMessage(chatId, data.data.rows[0].groupUrl, {

@@ -36,11 +36,11 @@ const bot = new TelegramBot(token, {
     polling: true,
 });
 
-const host = '8.217.124.68';
+const host = '47.243.88.30';
 // redis缓存
 const cache = new Redis({
     host: host,
-    port: 6380,
+    port: 6379,
     db: 0,
     password: 123456,
     retryStrategy: (options) => {

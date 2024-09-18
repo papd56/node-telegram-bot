@@ -483,6 +483,11 @@ bot.on('message', async (msg) => {
                   }
                 }
               }
+            } else if (admin && msg.caption === '设置公群头像' && msg.photo) {
+              // 使用setChatPhoto方法设置群头像，传入最后一张最大尺寸的图片photoStream作为photo参数
+              bot.setChatPhoto(chatId, bot.getFileStream(msg.photo.pop().file_id)).catch((error) => {
+                console.error('设置群头像失败：', error);
+              });
             }
           }else if (admin) {
             if (messageText === '开启权限') {
@@ -500,7 +505,13 @@ bot.on('message', async (msg) => {
           }
         }
       } else {
-        if (messageText && /^\d+$/.test(messageText)) {
+        if (messageText === '/start') {
+          await bot.sendMessage(chatId, '这里是欧意公群机器人\n' +
+            '欧易公群 @oydbgq\n' +
+            '欧易上押流程 @OKXSYLC\n' +
+            '验群，私聊我发送公群编号或者私聊你想要的业务，例如【白资、承兑、劳务】');
+          return true;
+        }else if (messageText && /^\d+$/.test(messageText)) {
           await post('/bot/group/groupList', { groupName: '公群' + messageText + ' ' }).then(async (data) => {
             if (data.data.total > 0) {
               await bot.sendMessage(chatId, data.data.rows[0].groupUrl, {

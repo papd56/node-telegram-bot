@@ -470,6 +470,11 @@ bot.on('message', async (msg) => {
                   }
                 }
               }
+            } else if (admin && msg.caption === '设置公群头像' && msg.photo) {
+              // 使用setChatPhoto方法设置群头像，传入最后一张最大尺寸的图片photoStream作为photo参数
+              bot.setChatPhoto(chatId, bot.getFileStream(msg.photo.pop().file_id)).catch((error) => {
+                console.error('设置群头像失败：', error);
+              });
             }
           }else if (admin) {
             if (messageText === '开启权限') {

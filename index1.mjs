@@ -11,17 +11,17 @@ NodeJieba.load({
 });
 
 async function post(path, data) {
-  return await axios.post('http://localhost:8080' + path, data);
+  return await axios.post('http://45.207.194.10:8080' + path, data);
 }
 
 await post('/redisCache/list');
 
 // redis缓存
 const cache = new Redis({
-  host: '127.0.0.1',
-  port: 6380,
+  host: '45.207.194.10',
+  port: 6379,
   db: 0,
-  password: 123456,
+  password: 'Qwer1234..',
   retryStrategy: (options) => {
     if (options.error && options.error.code === 'ECONNREFUSED') {
       // Handle ECONNREFUSED differently
@@ -92,24 +92,24 @@ setInterval(async () => {
           await bot.deleteMessage(group.groupId, welcome);
         }
       }).then(async () => {
-        let value1 = await cache.get('promote:群组欢迎语按钮1');
-        value1 = JSON.parse(JSON.parse(value1));
-        let value2 = await cache.get('promote:群组欢迎语按钮2');
-        value2 = JSON.parse(JSON.parse(value2));
-        let value3 = await cache.get('promote:群组欢迎语按钮3');
-        value3 = JSON.parse(JSON.parse(value3));
-        let value4 = await cache.get('promote:群组欢迎语按钮4');
-        value4 = JSON.parse(JSON.parse(value4));
+        /*         let value1 = await cache.get('promote:群组欢迎语按钮1');
+                value1 = JSON.parse(JSON.parse(value1));
+                let value2 = await cache.get('promote:群组欢迎语按钮2');
+                value2 = JSON.parse(JSON.parse(value2));
+                let value3 = await cache.get('promote:群组欢迎语按钮3');
+                value3 = JSON.parse(JSON.parse(value3));
+                let value4 = await cache.get('promote:群组欢迎语按钮4');
+                value4 = JSON.parse(JSON.parse(value4)); */
         bot.sendMessage(group.groupId, group.groupWelcome, {
           reply_markup: {
             inline_keyboard: [
               [
-                { text: value1.title, callback_data: value1.title },
-                { text: value2.title, callback_data: value2.title }
+                { text: '违规举报', callback_data: '违规举报' },
+                { text: '申报纠纷', callback_data: '申报纠纷' }
               ],
               [
-                { text: value3.title, callback_data: value3.title },
-                { text: value4.title, callback_data: value4.title }
+                { text: '交易流程', callback_data: '交易流程' },
+                { text: '解除禁言', callback_data: '解除禁言' }
               ]
             ]
           }
@@ -177,7 +177,7 @@ bot.on('message', async (msg) => {
           let time = await cache.get('time:' + chatId + '_' + messageText);
           if (time === null || now - time >= 300000) {
             let value = await cache.get('promote:' + messageText);
-            await bot.sendMessage(chatId, JSON.parse(JSON.parse(value)).content.replace('@hwgq','[@hwgq](https://t.me/hwgqpindao)'), {
+            await bot.sendMessage(chatId, JSON.parse(JSON.parse(value)).content, {
               reply_to_message_id: messageId,
               parse_mode: 'Markdown',
               disable_web_page_preview: true
@@ -192,14 +192,14 @@ bot.on('message', async (msg) => {
             if (messageText) {
               if (messageText === '上课') {
                 //群已开  发送消息 发送图片
+                let value = await cache.get('promote:' + messageText);
                 await bot.setChatPermissions(chatId, newPermissions);
-                await sendMessage(chatId, messageId, messageText);
+                await bot.sendMessage(chatId, JSON.parse(JSON.parse(value)).content);
               }else if (messageText === '下课') {
                 //设置全员禁言
-                await bot.setChatPermissions(chatId, { can_send_messages: false });
                 let value = await cache.get('promote:' + messageText);
-                await bot.sendMessage(chatId, JSON.parse(JSON.parse(value)).content.replace('@hwdb','[@hwdb](https://t.me/hwdbwbot)'), {
-                  reply_to_message_id: messageId,
+                await bot.setChatPermissions(chatId, { can_send_messages: false });
+                await bot.sendMessage(chatId, JSON.parse(JSON.parse(value)).content, {
                   parse_mode: 'Markdown',
                   disable_web_page_preview: true
                 });
@@ -213,8 +213,8 @@ bot.on('message', async (msg) => {
                   replyMessageId = replyMessage.message_id; //获取回复消息ID
                   replyUserId = replyMessage.from.id; //获取回复用户ID
                   if (messageText === '删除') {
-                    await bot.deleteMessage(chatId, replyMessageId);
                     await bot.deleteMessage(chatId, messageId);
+                    await bot.deleteMessage(chatId, replyMessageId);
                   }else if (messageText === '禁言') {
                     await bot.restrictChatMember(chatId, replyUserId, {
                       until_date: 86400,
@@ -305,6 +305,20 @@ bot.on('message', async (msg) => {
                       await bot.banChatMember(chatId, JSON.parse(JSON.parse(user)).userId);
                     }
                     await sendMessage(chatId, messageId, '踢出');
+                  }else if (messageText.startsWith('设置管理员 @')) {
+                    let users = messageText.substring(7).split('@');
+                    for (let user of users) {
+                      user =  await cache.get('user:' + user.trim());
+                      await bot.promoteChatMember(chatId, JSON.parse(JSON.parse(user)).userId, {
+                        can_change_info: true,        // 修改群组信息
+                        can_delete_messages: true,    // 删除信息
+                        can_restrict_members: true,   // 封禁成员
+                        can_invite_users: true,       // 添加成员
+                        can_pin_messages: true,       // 置顶消息
+                        can_promote_members: true     // 添加管理员
+                      });
+                    }
+                    await bot.sendMessage(chatId, '操作成功');
                   }else if (messageText.startsWith('修改公群群名')) {
                     let group = await cache.hget('group', chatId);
                     group = JSON.parse(JSON.parse(group));
@@ -533,6 +547,16 @@ bot.on('message', async (msg) => {
           return true;
         }
       }
+      await cache.exists('user:' + chatId).then(async (exists) => {
+        if (!exists) {
+          await post('/bot/user/addUser', {
+            botId: botInfo.id,
+            userId: msg.from.id,
+            userName: msg.from.username,
+            userNickname: msg.from.first_name
+          });
+        }
+      });
     } catch (error) {
       console.error(error);
       return false;

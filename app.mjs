@@ -27,7 +27,7 @@ async function fetchData(path, data) {
 }
 
 async function post(path, data) {
-    return await axios.post('http://localhost:8898' + path, data);
+    return await axios.post('http://45.207.194.10:8898' + path, data);
 }
 
 const app = express();

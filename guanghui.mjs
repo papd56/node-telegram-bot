@@ -11,15 +11,15 @@ NodeJieba.load({
 });
 
 async function post(path, data) {
-  return await axios.post('http://127.0.0.1:8081' + path, data);
+  return await axios.post('http://45.207.194.10:8080' + path, data);
 }
 
 await post('/redisCache/list');
 
 // redis缓存
 const cache = new Redis({
-  host: '127.0.0.1',
-  port: 6380,
+  host: '45.207.194.10',
+  port: 6379,
   db: 0,
   password: 'Qwer1234..',
   retryStrategy: (options) => {

@@ -11,7 +11,7 @@ NodeJieba.load({
 });
 
 async function post(path, data) {
-  return await axios.post('http://127.0.0.1:8897' + path, data);
+  return await axios.post('http://127.0.0.1:8081' + path, data);
 }
 
 await post('/redisCache/list');
@@ -61,7 +61,7 @@ cache.on('error', (error) => {
   console.error('redis error:', error);
 });
 
-const token = "7269675720:AAEEkkXm30WMsjR4ZWysHDPQTQeym0aUX-Y";
+const token = '7121880748:AAEP9zGTcYTyAeKv2u5k9PJkZdOZoS8f-eA';
 
 const bot = new TelegramBot(token, {
   polling: true,
@@ -306,21 +306,6 @@ bot.on('message', async (msg) => {
                       await bot.banChatMember(chatId, JSON.parse(JSON.parse(user)).userId);
                     }
                     await sendMessage(chatId, messageId, '踢出');
-                    return true;
-                  }else if (messageText.startsWith('设置管理员 @')) {
-                    let users = messageText.substring(7).split('@');
-                    for (let user of users) {
-                      user =  await cache.get('user:' + user.trim());
-                      await bot.promoteChatMember(chatId, JSON.parse(JSON.parse(user)).userId, {
-                        can_change_info: true,        // 修改群组信息
-                        can_delete_messages: true,    // 删除信息
-                        can_restrict_members: true,   // 封禁成员
-                        can_invite_users: true,       // 添加成员
-                        can_pin_messages: true,       // 置顶消息
-                        can_promote_members: true     // 添加管理员
-                      });
-                    }
-                    await bot.sendMessage(chatId, '操作成功');
                     return true;
                   }else if (messageText.startsWith('修改公群群名')) {
                     let group = await cache.hget('group', chatId);

@@ -34,7 +34,8 @@
     "multer": "1.4.5-lts.1",
     "mysql2": "^3.11.3",
     "node-telegram-bot-api": "^0.66.0",
-    "nodejieba": "^3.4.2"
+    "nodejieba": "^3.4.2",
+    "selenium": "^2.20.0"
   },
   "repository": {
     "type": "git",

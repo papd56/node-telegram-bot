@@ -35,7 +35,8 @@
     "mysql2": "^3.11.3",
     "node-telegram-bot-api": "^0.66.0",
     "nodejieba": "^3.4.2",
-    "selenium": "^2.20.0"
+    "selenium": "^2.20.0",
+    "telebot": "^1.4.1"
   },
   "repository": {
     "type": "git",

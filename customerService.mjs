@@ -5,9 +5,9 @@ import Redis from 'ioredis';
 const host = '127.0.0.1';
 const cache = new Redis({
   host: host,
-  port: 6380,
+  port: 6379,
   db: 0,
-  password: 123456,
+  password: 'Qwer1234..',
   retryStrategy: (options) => {
     if (options.error && options.error.code === 'ECONNREFUSED') {
       // Handle ECONNREFUSED differently

@@ -19,7 +19,7 @@ await post('/redisCache/list');
 // redis缓存
 const cache = new Redis({
   host: '127.0.0.1',
-  port: 6380,
+  port: 6379,
   db: 0,
   password: 'Qwer1234..',
   retryStrategy: (options) => {

@@ -11,7 +11,7 @@ NodeJieba.load({
 });
 
 async function post(path, data) {
-  return await axios.post('http://127.0.0.1:8081' + path, data);
+  return await axios.post('http://45.207.194.10:8080' + path, data);
 }
 
 await post('/redisCache/list');

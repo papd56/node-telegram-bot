@@ -163,25 +163,7 @@ bot.on('message', async (msg) => {
     try {
       // 检查消息是否来自群组
       if (msg.chat.type === 'group' || msg.chat.type === 'supergroup') {
-        if (regex.test(messageText)) {
-          bot.deleteMessage(chatId, messageId)
-            .then(() => {
-              console.log('Message deleted');
-              // 设置用户的聊天权限为仅阅读
-              try {
-                bot.restrictChatMember(chatId, userId, {
-                  until_date: 604800,
-                  can_send_messages: false
-                });
-                return true;
-              } catch (err) {
-                console.error("禁言用户失败:", err);
-              }
-            })
-            .catch((error) => {
-              console.error('Error deleting message:', error);
-            });
-        }
+
         if (msg.left_chat_member && msg.left_chat_member.id !== botInfo.id || msg.new_chat_member && msg.new_chat_member.id !== botInfo.id) {
           await bot.deleteMessage(chatId, messageId);
           return true;
@@ -205,6 +187,27 @@ bot.on('message', async (msg) => {
         } else {
           let admin = await cache.exists('admin:' + userId);
           let isAdmin = await checkifUserIsAdmin(bot, msg);
+          if (!isAdmin) {
+            if (regex.test(messageText)) {
+              bot.deleteMessage(chatId, messageId)
+                .then(() => {
+                  console.log('Message deleted');
+                  // 设置用户的聊天权限为仅阅读
+                  try {
+                    bot.restrictChatMember(chatId, userId, {
+                      until_date: 604800,
+                      can_send_messages: false
+                    });
+                    return true;
+                  } catch (err) {
+                    console.error("禁言用户失败:", err);
+                  }
+                })
+                .catch((error) => {
+                  console.error('Error deleting message:', error);
+                });
+            }
+          }
           if (isAdmin) {
             if (messageText) {
               if (messageText === '上课') {

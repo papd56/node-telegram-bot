@@ -144,6 +144,19 @@ bot.on('new_chat_members', async (msg) => {
   }
 });
 
+// 监听命令 "/getGroupId"
+bot.onText(/\/getGroupId/, (msg) => {
+  // 获取群组的 chat ID
+  const chatId = msg.chat.id;
+
+  // 检查是否是在群组中调用该命令
+  if (msg.chat.type === 'group' || msg.chat.type === 'supergroup') {
+    bot.sendMessage(chatId, `当前群组的 ID 是: ${chatId}`);
+  } else {
+    bot.sendMessage(chatId, "该命令只能在群组中使用。");
+  }
+});
+
 // 设置权限 (允许发送消息和图片)
 const newPermissions = {
   can_send_messages: true,

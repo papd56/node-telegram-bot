@@ -297,7 +297,7 @@ bot.on('message', async (msg) => {
                   } else if (messageText === '移除管理') {
                     await bot.promoteChatMember(chatId, replyUserId, {
                       can_change_info: false,        // 修改群组信息
-                      can_delete_messages: false,    // 删除信息
+                      can_delete_messages: false,    // 删除信
                       can_restrict_members: false,   // 封禁成员
                       can_invite_users: false,       // 添加成员
                       can_pin_messages: false,       // 置顶消息

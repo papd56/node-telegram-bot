@@ -145,7 +145,7 @@ bot.on('new_chat_members', async (msg) => {
 });
 
 // 监听命令 "/getGroupId"
-bot.onText(/\/getGroupId/, (msg) => {
+bot.onText(/\显示公群ID/, (msg) => {
   // 获取群组的 chat ID
   const chatId = msg.chat.id;
 

@@ -172,7 +172,7 @@ const newPermissions = {
   // ...其他权限设置
 };
 // 敏感词库
-const sensitiveWords = ['假群', '假压', '假牙', '假呀', '骗子群', '假压群', '骗子担保'];
+const sensitiveWords = ['假群', '假压', '假牙', '假呀', '骗子群', '假压群', '骗子担保','克隆群'];
 const regex = new RegExp(sensitiveWords.join('|'), 'i');
 
 bot.on('message', async (msg) => {

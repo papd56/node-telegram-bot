@@ -2,9 +2,8 @@ import TelegramBot from 'node-telegram-bot-api';
 import Redis from 'ioredis';
 
 // redis缓存
-const host = '127.0.0.1';
 const cache = new Redis({
-  host: host,
+  host: '45.207.194.10',
   port: 6379,
   db: 0,
   password: 'Qwer1234..',
@@ -47,7 +46,7 @@ cache.on('error', (error) => {
   console.error('redis error:', error);
 });
 
-const token = '7312820802:AAE_WXdULOIXTFg3-9PDTImdLnExjnd408c';
+const token = '7829636771:AAGpnFhb8wpA1oEPHEzXBudxMoAMUZOP2ng';
 
 const bot = new TelegramBot(token, {
   polling: true,
@@ -103,6 +102,74 @@ bot.on('message', async (msg) => {
     try {
       // 检查消息是否来自群组
       if (msg.chat.type === 'group' || msg.chat.type === 'supergroup') {
+        if (messageText === '创建新链接1') {
+          try {
+            // 创建一个新的邀请链接
+            const newInviteLink = await bot.createChatInviteLink(chatId, {
+              name: '新邀请链接',
+              member_limit: 1, // 限制最多10人使用
+            });
+
+            console.log('新的邀请链接:', newInviteLink.invite_link);
+            bot.sendMessage(chatId, `创建专群链接成功！\n` + `新的邀请链接是：\n` + `${newInviteLink.invite_link}`, {
+              disable_web_page_preview: true
+            });
+          } catch (error) {
+            console.error('创建邀请链接时出错:', error);
+            bot.sendMessage(chatId, '创建邀请链接失败，请检查权限或群组设置。');
+          }
+        }
+        if (messageText === '创建新链接2') {
+          try {
+            // 创建一个新的邀请链接
+            const newInviteLink = await bot.createChatInviteLink(chatId, {
+              name: '新邀请链接',
+              // expire_date: Math.floor(Date.now() / 1000) + 3600,
+              member_limit: 2, // 限制最多10人使用
+            });
+
+            console.log('新的邀请链接:', newInviteLink.invite_link);
+            bot.sendMessage(chatId, `创建专群链接成功！\n` + `新的邀请链接是：\n` + `${newInviteLink.invite_link}`, {
+              disable_web_page_preview: true
+            });
+          } catch (error) {
+            console.error('创建邀请链接时出错:', error);
+            bot.sendMessage(chatId, '创建邀请链接失败，请检查权限或群组设置。');
+          }
+        }
+        if (messageText === '锁群') {
+          // 锁定群组的函数
+          try {
+            // 获取群组信息
+            const chat = await bot.getChat(chatId);
+            // 获取当前的邀请链接
+            const currentInviteLinks = chat.invite_link || [];
+            // 创建一个新的邀请链接
+            const newInviteLink = await bot.exportChatInviteLink(chatId);
+            // 删除旧的邀请链接
+            for (const link of currentInviteLinks) {
+              await bot.revokeChatInviteLink(chatId, link);
+            }
+            // 将新的邀请链接设置为主要的邀请链接
+            await bot.setChatAdministratorCustomTitle(chatId, chat.id, {
+              custom_title: '管理员',
+              can_post_messages: false, // 根据需要设置其他权限
+              can_edit_messages: false,
+              can_delete_messages: false,
+              can_invite_users: true,
+              can_restrict_members: true,
+              can_pin_messages: true,
+              can_promote_members: true
+            });
+            await bot.sendMessage(chatId, '群组邀请链接已清除并更新', {
+              reply_to_message_id: messageId,
+            })
+            console.log('群组邀请链接已清除并更新');
+          } catch (error) {
+            console.error('Error clearing invite links:', error);
+          }
+        }
+
         if (messageText === '验群' || messageText === '担保信息') {
           let admins = await bot.getChatAdministrators(chatId);
           await bot.sendMessage(chatId, '汇旺担保官方人员 ' + admins.map(admin => admin.user.username).join(' ') + ' 在本群，本群《' + title + '》是真群', {
@@ -114,31 +181,31 @@ bot.on('message', async (msg) => {
           if (replyMessage) {
             if (messageText === 'ID') {
               await bot.sendMessage(chatId, '该用户tgid: `' + replyUserId + '`', { parse_mode: 'Markdown' });
-            }else if (messageText === '置顶') {
+            } else if (messageText === '置顶') {
               await bot.pinChatMessage(chatId, replyMessageId);
               await bot.sendMessage(chatId, '置顶成功', {
                 reply_to_message_id: messageId,
               });
-            }else if (messageText === '设置需方') {
+            } else if (messageText === '设置需方') {
               await cache.set('demand:' + chatId, replyMessage.from.first_name + ' @' + replyMessage.from.username);
               await bot.sendMessage(chatId, '需方负责人设置完成');
-            }else if (messageText === '设置供方') {
+            } else if (messageText === '设置供方') {
               await cache.set('supply:' + chatId, replyMessage.from.first_name + ' @' + replyMessage.from.username);
               await bot.sendMessage(chatId, '供方负责人设置完成');
-            }else if (messageText === '设置需方人员') {
+            } else if (messageText === '设置需方人员') {
               await cache.hset('demands:' + chatId, replyMessage.from.username, replyMessage.from.first_name + ' @' + replyMessage.from.username);
               await bot.sendMessage(chatId, '需方人员设置完成');
-            }else if (messageText === '设置供方人员') {
+            } else if (messageText === '设置供方人员') {
               await cache.hset('supplies:' + chatId, replyMessage.from.username, replyMessage.from.first_name + ' @' + replyMessage.from.username);
               await bot.sendMessage(chatId, '供方人员设置完成');
-            }else if (messageText === '设置专群规则') {
+            } else if (messageText === '设置专群规则') {
               await cache.set('rule:' + chatId, replyMessage.text.trim());
               await bot.sendMessage(chatId, '规则设置成功');
-            }else if (messageText === '设置专群业务') {
+            } else if (messageText === '设置专群业务') {
               await cache.set('biz:' + chatId, replyMessage.text.trim());
               await bot.sendMessage(chatId, '业务设置成功');
             }
-          }else if (messageText === '初始化') {
+          } else if (messageText === '初始化') {
             //专群初始化 发送消息 图片 视频 语音消息
             await bot.setChatPermissions(chatId, {
               can_send_messages: true,
@@ -169,60 +236,60 @@ bot.on('message', async (msg) => {
                 '3、请尽量使用冷钱包上押,不要用交易所直接提u上押,使用交易所提u上押的请上押时候说明是交易所提的u,并同时说明下押地址。\n' +
                 '4、由于群资源紧张，如本群当天无上押，即被回收；后续如需交易，请联系 @hwdb 开新群。\n\n' +
                 '⚠️请供需双方确定一下各方负责人，以后是否下押以及下押到哪，需要交易详情上的供需双方负责人确认，决定权在负责人手里，本群为私群，只能对应一个供方负责人和一个需方负责人。请不要拉无关人员进群，谁拉进来的人谁负责。人进齐后请通知交易员锁群').then(async () => {
-                let message = await bot.sendMessage(chatId, '初始化完成 该群是真群');
-                await cache.set('init:' + chatId, message.message_id + 1);
-              });
+                  let message = await bot.sendMessage(chatId, '初始化完成 该群是真群');
+                  await cache.set('init:' + chatId, message.message_id + 1);
+                });
             });
             await cache.set('rule:' + chatId, messageText.substring(6).trim());
-          }else if (messageText === '显示所有人') {
+          } else if (messageText === '显示所有人') {
             let supply = await cache.get('supply:' + chatId);
             let supplies = await cache.hvals('supplies:' + chatId);
             let demand = await cache.get('demand:' + chatId);
             let demands = await cache.hvals('demands:' + chatId);
-            await bot.sendMessage(chatId, '供方负责人：' + demand + '\n供方人员：'+supplies+'\n需方负责人：' + supply + '\n需方人员：' + demands, {
+            await bot.sendMessage(chatId, '供方负责人：' + demand + '\n供方人员：' + supplies + '\n需方负责人：' + supply + '\n需方人员：' + demands, {
               reply_to_message_id: messageId,
             });
-          }else if (messageText === '显示专群群名') {
+          } else if (messageText === '显示专群群名') {
             await bot.sendMessage(chatId, title);
-          }else if (messageText === '群组清理') {
+          } else if (messageText === '群组清理') {
             let message = await bot.sendMessage(chatId, messageText);
             let init = await cache.get('init:' + chatId);
             message = await bot.sendMessage(chatId, '检测本群目前存在' + (message.message_id - init - 1) + '条记录待清理,数据清理执行中(本条消息请忽略)');
             for (let i = init; i <= message.message_id; i++) {
               try {
                 await bot.deleteMessage(chatId, i);
-              }catch (error) {
+              } catch (error) {
                 console.error(error);
               }
             }
             await bot.sendMessage(chatId, '群组清理完成');
-            await cache.set('init:' + chatId, message.message_id+1);
-          }else if (messageText === '上押') {
+            await cache.set('init:' + chatId, message.message_id + 1);
+          } else if (messageText === '上押') {
             await bot.sendMessage(chatId, '欧易上押地址\n\n' +
               '上押TRC20地址：   TWskNcPknGW68jxYbUJPdv4diUPsom8PJA\n' +
               '请上押后立即@官方交易员  @oytb888 查账如有延迟通知查账，造成个人损失的，本平台概不负责押金未确认到帐  禁止交易   谨防骗子套路\n' +
               '    交易所提币上押，需要提供自己的充币地址及提币录屏，录屏中的充币地址需要跟您报备的地址一致，该地址视为上押原地址，编辑无效，打错请重发！    冷钱包上押方便快捷，交易所提币上押费时费力。（上押请尽量用自己的冷钱包转账，上下押需同一地址）').then(async () => {
-              await bot.sendPhoto(chatId, 'img.png').then(async () => {
-                await bot.sendMessage(chatId, 'TWskNcPknGW68jxYbUJPdv4diUPsom8PJA');
+                await bot.sendPhoto(chatId, 'img.png').then(async () => {
+                  await bot.sendMessage(chatId, 'TWskNcPknGW68jxYbUJPdv4diUPsom8PJA');
+                });
               });
-            });
-          }else if (messageText) {
+          } else if (messageText) {
             if (messageText.startsWith('设置专群群名') || messageText.startsWith('修改专群群名')) {
               // 更改群组名称
               let newTitle = messageText.substring(6).trim();
               await bot.setChatTitle(chatId, newTitle);
               await bot.sendMessage(chatId, '群名修改成功，请核对：\n老群名：' + title + '\n新群名：' + newTitle);
-            }else if (messageText.startsWith('设置需方 @')) {
+            } else if (messageText.startsWith('设置需方 @')) {
               let userName = messageText.split('@')[1].trim();
               let firstName = await cache.get('deal:' + chatId + '_' + userName);
               await cache.set('demand:' + chatId, firstName + ' @' + userName);
               await bot.sendMessage(chatId, '需方负责人设置完成');
-            }else if (messageText.startsWith('设置供方 @')) {
+            } else if (messageText.startsWith('设置供方 @')) {
               let userName = messageText.split('@')[1].trim();
               let firstName = await cache.get('deal:' + chatId + '_' + userName);
               await cache.set('supply:' + chatId, firstName + ' @' + userName);
               await bot.sendMessage(chatId, '供方负责人设置完成');
-            }else if (messageText.startsWith('设置需方人员 @')) {
+            } else if (messageText.startsWith('设置需方人员 @')) {
               let pipeline = cache.pipeline();
               let users = messageText.substring(8).split('@');
               for (let user of users) {
@@ -236,7 +303,7 @@ bot.on('message', async (msg) => {
                   await bot.sendMessage(chatId, '需方人员设置完成');
                 }
               });
-            }else if (messageText.startsWith('设置供方人员 @')) {
+            } else if (messageText.startsWith('设置供方人员 @')) {
               let pipeline = cache.pipeline();
               let users = messageText.substring(8).split('@');
               for (let user of users) {
@@ -250,13 +317,13 @@ bot.on('message', async (msg) => {
                   await bot.sendMessage(chatId, '供方人员设置完成');
                 }
               });
-            }else if (messageText.startsWith('设置专群规则')) {
+            } else if (messageText.startsWith('设置专群规则')) {
               await cache.set('rule:' + chatId, messageText.substring(6).trim());
               await bot.sendMessage(chatId, '规则设置成功');
-            }else if (messageText.startsWith('设置专群业务')) {
+            } else if (messageText.startsWith('设置专群业务')) {
               await cache.set('biz:' + chatId, messageText.substring(6).trim());
               await bot.sendMessage(chatId, '业务设置成功');
-            }else if (messageText.startsWith('查看交易详情')) {
+            } else if (messageText.startsWith('查看交易详情')) {
               let demand = await cache.get('demand:' + chatId);
               let supply = await cache.get('supply:' + chatId);
               let rule = await cache.get('rule:' + chatId);

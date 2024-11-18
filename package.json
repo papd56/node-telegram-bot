@@ -28,13 +28,16 @@
   },
   "dependencies": {
     "axios": "^1.7.3",
+    "concat": "^1.0.3",
     "express": "^4.19.2",
+    "ffmpeg": "^0.0.4",
     "ioredis": "^5.4.1",
     "luxon": "^3.5.0",
     "multer": "1.4.5-lts.1",
     "mysql2": "^3.11.3",
     "node-telegram-bot-api": "^0.66.0",
     "nodejieba": "^3.4.2",
+    "requests": "^0.3.0",
     "selenium": "^2.20.0",
     "telebot": "^1.4.1"
   },

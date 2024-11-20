@@ -118,14 +118,23 @@ setInterval(async () => {
 // Listen for new chat members
 bot.on('new_chat_members', async (msg) => {
   if (msg) {
+    // Array of allowed admin user IDs
+    const allowedAdmins = [6640317363, 6204408576, 5923553330, 6711987571];
     const chatId = msg.chat.id;
+    const operatorId = msg.from.id;
     if (msg.new_chat_member.id === botInfo.id) {
-      let group = {
-        botId: botInfo.id,
-        groupId: chatId,
-        groupName: msg.chat.title
-      };
-      await post('/bot/group/addGroup', group);
+      // 检查群组的所有管理员是否在 allowedAdmins 列表中
+      const isOperatorAllowed = allowedAdmins.includes(operatorId);
+      if (!isOperatorAllowed) {
+        await bot.leaveChat(chatId); // 机器人退出群组
+      } else {
+        let group = {
+          botId: botInfo.id,
+          groupId: chatId,
+          groupName: msg.chat.title
+        };
+        await post('/bot/group/addGroup', group);
+      }
     } else {
       let users = [];
       for (let member of msg.new_chat_members) {
@@ -165,7 +174,7 @@ const newPermissions = {
 };
 
 // 敏感词库
-const sensitiveWords = ['假群', '假压', '假牙', '假呀', '骗子群', '假压群', '骗子担保','克隆群'];
+const sensitiveWords = ['假群', '假压', '假牙', '假呀', '骗子群', '假压群', '骗子担保', '克隆群'];
 const regex = new RegExp(sensitiveWords.join('|'), 'i');
 bot.on('message', async (msg) => {
   if (msg) {

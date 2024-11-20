@@ -39,7 +39,8 @@
     "nodejieba": "^3.4.2",
     "requests": "^0.3.0",
     "selenium": "^2.20.0",
-    "telebot": "^1.4.1"
+    "telebot": "^1.4.1",
+    "update": "^0.7.4"
   },
   "repository": {
     "type": "git",

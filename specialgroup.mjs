@@ -172,9 +172,14 @@ bot.on('message', async (msg) => {
 
         if (messageText === '验群' || messageText === '担保信息') {
           let admins = await bot.getChatAdministrators(chatId);
-          await bot.sendMessage(chatId, '汇旺担保官方人员 ' + admins.map(admin => admin.user.username).join(' ') + ' 在本群，本群《' + title + '》是真群', {
-            reply_to_message_id: messageId,
-          });
+          await bot.sendMessage(chatId,
+            `汇旺担保官方人员: ` +
+            admins.map(admin => admin.user.username).join(' ') +
+            ` 在本群，本群 《<code>${title}</code>》 是真群。`,
+            {
+              reply_to_message_id: messageId,
+              parse_mode: 'HTML', // 启用 HTML 格式
+            });
         }
         let isAdmin = await cache.exists('admin:' + userId);
         if (isAdmin) {

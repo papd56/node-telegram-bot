@@ -36,13 +36,12 @@ const bot = new TelegramBot(token, {
     polling: true,
 });
 
-const host = '47.243.88.30';
 // redis缓存
 const cache = new Redis({
-    host: host,
+    host: '45.207.194.10',
     port: 6379,
     db: 0,
-    password: 123456,
+    password: 'Qwer1234..',
     retryStrategy: (options) => {
         if (options.error && options.error.code === 'ECONNREFUSED') {
             // Handle ECONNREFUSED differently

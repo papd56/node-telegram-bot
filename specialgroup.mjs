@@ -84,6 +84,12 @@ const newPermissions = {
   // ...其他权限设置
 };
 
+// 存储确认状态
+const confirmationStatus = {
+  supplier: false, // 供方负责人是否已确认
+  demander: false, // 需方负责人是否已确认
+};
+
 bot.on('message', async (msg) => {
   if (msg) {
     const chatId = msg.chat.id;
@@ -102,6 +108,29 @@ bot.on('message', async (msg) => {
     try {
       // 检查消息是否来自群组
       if (msg.chat.type === 'group' || msg.chat.type === 'supergroup') {
+        if (messageText === '请双方负责人确认') {
+          //需方负责人
+          let supply = await cache.get('supply:' + chatId);
+          //供方负责人
+          let demand = await cache.get('demand:' + chatId);
+          const buttons = {
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  { text: '✅ 供方确认', callback_data: 'confirm_supplier' },
+                  { text: '✅ 需方确认', callback_data: 'confirm_demander' },
+                ],
+              ],
+            },
+          };
+          const message = `
+请双方负责人确认：（双方负责人点击有效，其他人无效）
+确认无误后点击下方确认按钮：
+供方负责人: ${demand} ${confirmationStatus.supplier ? '✅ 已确认' : ''}
+需方负责人: ${supply} ${confirmationStatus.demander ? '✅ 已确认' : ''}
+`;
+          await bot.sendMessage(chatId, message, buttons);
+        }
         if (messageText === '创建新链接1') {
           try {
             // 创建一个新的邀请链接
@@ -360,4 +389,57 @@ bot.on('message', async (msg) => {
       return false;
     }
   }
+});
+
+// 处理按钮点击
+bot.on('callback_query', (callbackQuery) => {
+  const data = callbackQuery.data; // 回调数据
+  const message = callbackQuery.message; // 点击按钮时的消息
+  const userId = callbackQuery.from.id; // 点击按钮的用户 ID
+
+  let responseText = '';
+
+  // 根据按钮类型更新状态
+  if (data === 'confirm_supplier' && !confirmationStatus.supplier) {
+    confirmationStatus.supplier = true;
+    responseText = '供方负责人已确认 ✅';
+  } else if (data === 'confirm_demander' && !confirmationStatus.demander) {
+    confirmationStatus.demander = true;
+    responseText = '需方负责人已确认 ✅';
+  } else {
+    responseText = '该操作已完成或无权限重复操作！';
+  }
+
+  // 更新消息内容
+  const updatedText = `
+请双方负责人确认：（双方负责人点击有效，其他人无效）
+确认无误后点击下方确认按钮：
+供方负责人: ${confirmationStatus.supplier ? '✅ 已确认' : ''}
+需方负责人: ${confirmationStatus.demander ? '✅ 已确认' : ''}
+`;
+
+  // 修改原消息
+  bot.editMessageText(updatedText, {
+    chat_id: message.chat.id,
+    message_id: message.message_id,
+    reply_markup: {
+      inline_keyboard: [
+        [
+          {
+            text: `✅ 供方确认${confirmationStatus.supplier ? '（已完成）' : ''}`,
+            callback_data: 'confirm_supplier',
+          },
+          {
+            text: `✅ 需方确认${confirmationStatus.demander ? '（已完成）' : ''}`,
+            callback_data: 'confirm_demander',
+          },
+        ],
+      ],
+    },
+  });
+
+  // 回复点击者
+  bot.answerCallbackQuery(callbackQuery.id, {
+    text: responseText
+  });
 });

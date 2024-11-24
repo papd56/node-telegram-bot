@@ -217,8 +217,8 @@ bot.on('message', async (msg) => {
             });
         }
         let isAdmin = await checkifUserIsAdmin(bot, msg);
-        let admin = await cache.exists('admin:' + userId);
-        if (isAdmin && admin) {
+        // let admin = await cache.exists('admin:' + userId);
+        if (isAdmin) {
           if (replyMessage) {
             if (messageText === 'ID') {
               await bot.sendMessage(chatId, '该用户tgid: `' + replyUserId + '`', { parse_mode: 'Markdown' });

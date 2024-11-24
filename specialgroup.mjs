@@ -1,6 +1,5 @@
 import TelegramBot from 'node-telegram-bot-api';
 import Redis from 'ioredis';
-import checkifUserIsAdmin from './adminCheck.mjs';
 
 // redis缓存
 const cache = new Redis({
@@ -59,11 +58,6 @@ const bot = new TelegramBot(token, {
   }
 });
 
-async function sendMessage(chatId, messageId, messageText) {
-  let value = await cache.get('promote:' + messageText);
-  await bot.sendMessage(chatId, JSON.parse(JSON.parse(value)).content);
-}
-
 // Listen for new chat members
 bot.on('new_chat_members', async (msg) => {
   if (msg) {
@@ -90,12 +84,6 @@ const newPermissions = {
   // ...其他权限设置
 };
 
-// 存储确认状态
-const confirmationStatus = {
-  supplier: false, // 供方负责人是否已确认
-  demander: false, // 需方负责人是否已确认
-};
-
 bot.on('message', async (msg) => {
   if (msg) {
     const chatId = msg.chat.id;
@@ -114,29 +102,6 @@ bot.on('message', async (msg) => {
     try {
       // 检查消息是否来自群组
       if (msg.chat.type === 'group' || msg.chat.type === 'supergroup') {
-        if (messageText === '请双方负责人确认') {
-          //需方负责人
-          let supply = await cache.get('supply:' + chatId);
-          //供方负责人
-          let demand = await cache.get('demand:' + chatId);
-          const buttons = {
-            reply_markup: {
-              inline_keyboard: [
-                [
-                  { text: '✅ 供方确认', callback_data: 'confirm_supplier' },
-                  { text: '✅ 需方确认', callback_data: 'confirm_demander' },
-                ],
-              ],
-            },
-          };
-          const message = `
-请双方负责人确认：（双方负责人点击有效，其他人无效）
-确认无误后点击下方确认按钮：
-供方负责人: ${demand} ${confirmationStatus.supplier ? '✅ 已确认' : ''}
-需方负责人: ${supply} ${confirmationStatus.demander ? '✅ 已确认' : ''}
-`;
-          await bot.sendMessage(chatId, message, buttons);
-        }
         if (messageText === '创建新链接1') {
           try {
             // 创建一个新的邀请链接
@@ -204,7 +169,7 @@ bot.on('message', async (msg) => {
             console.error('Error clearing invite links:', error);
           }
         }
-
+	
         if (messageText === '验群' || messageText === '担保信息') {
           let admins = await bot.getChatAdministrators(chatId);
           await bot.sendMessage(chatId,
@@ -216,37 +181,36 @@ bot.on('message', async (msg) => {
               parse_mode: 'HTML', // 启用 HTML 格式
             });
         }
-        let isAdmin = await checkifUserIsAdmin(bot, msg);
-        let admin = await cache.exists('admin:' + userId);
-        if (isAdmin && admin) {
+        let isAdmin = await cache.exists('admin:' + userId);
+        if (isAdmin) {
           if (replyMessage) {
             if (messageText === 'ID') {
               await bot.sendMessage(chatId, '该用户tgid: `' + replyUserId + '`', { parse_mode: 'Markdown' });
-            } else if (messageText === '置顶') {
+            }else if (messageText === '置顶') {
               await bot.pinChatMessage(chatId, replyMessageId);
               await bot.sendMessage(chatId, '置顶成功', {
                 reply_to_message_id: messageId,
               });
-            } else if (messageText === '设置需方') {
+            }else if (messageText === '设置需方') {
               await cache.set('demand:' + chatId, replyMessage.from.first_name + ' @' + replyMessage.from.username);
               await bot.sendMessage(chatId, '需方负责人设置完成');
-            } else if (messageText === '设置供方') {
+            }else if (messageText === '设置供方') {
               await cache.set('supply:' + chatId, replyMessage.from.first_name + ' @' + replyMessage.from.username);
               await bot.sendMessage(chatId, '供方负责人设置完成');
-            } else if (messageText === '设置需方人员') {
+            }else if (messageText === '设置需方人员') {
               await cache.hset('demands:' + chatId, replyMessage.from.username, replyMessage.from.first_name + ' @' + replyMessage.from.username);
               await bot.sendMessage(chatId, '需方人员设置完成');
-            } else if (messageText === '设置供方人员') {
+            }else if (messageText === '设置供方人员') {
               await cache.hset('supplies:' + chatId, replyMessage.from.username, replyMessage.from.first_name + ' @' + replyMessage.from.username);
               await bot.sendMessage(chatId, '供方人员设置完成');
-            } else if (messageText === '设置专群规则') {
+            }else if (messageText === '设置专群规则') {
               await cache.set('rule:' + chatId, replyMessage.text.trim());
               await bot.sendMessage(chatId, '规则设置成功');
-            } else if (messageText === '设置专群业务') {
+            }else if (messageText === '设置专群业务') {
               await cache.set('biz:' + chatId, replyMessage.text.trim());
               await bot.sendMessage(chatId, '业务设置成功');
             }
-          } else if (messageText === '初始化') {
+          }else if (messageText === '初始化') {
             //专群初始化 发送消息 图片 视频 语音消息
             await bot.setChatPermissions(chatId, {
               can_send_messages: true,
@@ -277,65 +241,60 @@ bot.on('message', async (msg) => {
                 '3、请尽量使用冷钱包上押,不要用交易所直接提u上押,使用交易所提u上押的请上押时候说明是交易所提的u,并同时说明下押地址。\n' +
                 '4、由于群资源紧张，如本群当天无上押，即被回收；后续如需交易，请联系 @hwdb 开新群。\n\n' +
                 '⚠️请供需双方确定一下各方负责人，以后是否下押以及下押到哪，需要交易详情上的供需双方负责人确认，决定权在负责人手里，本群为私群，只能对应一个供方负责人和一个需方负责人。请不要拉无关人员进群，谁拉进来的人谁负责。人进齐后请通知交易员锁群').then(async () => {
-                  let message = await bot.sendMessage(chatId, '初始化完成 该群是真群');
-                  await cache.set('init:' + chatId, message.message_id + 1);
-                });
+                let message = await bot.sendMessage(chatId, '初始化完成 该群是真群');
+                await cache.set('init:' + chatId, message.message_id + 1);
+              });
             });
             await cache.set('rule:' + chatId, messageText.substring(6).trim());
-          } else if (messageText === '显示所有人') {
+          }else if (messageText === '显示所有人') {
             let supply = await cache.get('supply:' + chatId);
             let supplies = await cache.hvals('supplies:' + chatId);
             let demand = await cache.get('demand:' + chatId);
             let demands = await cache.hvals('demands:' + chatId);
-            await bot.sendMessage(chatId, '供方负责人：' + demand + '\n供方人员：' + supplies + '\n需方负责人：' + supply + '\n需方人员：' + demands, {
+            await bot.sendMessage(chatId, '供方负责人：' + demand + '\n供方人员：'+supplies+'\n需方负责人：' + supply + '\n需方人员：' + demands, {
               reply_to_message_id: messageId,
             });
-          } else if (messageText === '显示专群群名') {
+          }else if (messageText === '显示专群群名') {
             await bot.sendMessage(chatId, title);
-          } else if (messageText === '群组清理') {
+          }else if (messageText === '群组清理') {
             let message = await bot.sendMessage(chatId, messageText);
             let init = await cache.get('init:' + chatId);
             message = await bot.sendMessage(chatId, '检测本群目前存在' + (message.message_id - init - 1) + '条记录待清理,数据清理执行中(本条消息请忽略)');
             for (let i = init; i <= message.message_id; i++) {
               try {
                 await bot.deleteMessage(chatId, i);
-              } catch (error) {
+              }catch (error) {
                 console.error(error);
               }
             }
             await bot.sendMessage(chatId, '群组清理完成');
-            await cache.set('init:' + chatId, message.message_id + 1);
-          } else if (messageText === '上押') {
-            await bot.sendMessage(chatId, '上押汇旺账户：\n' +
-              '汇旺账号：12345（靓号） 户名：担保上押 \n\n' +
-
-              '上押TRC20地址：\n' +
-              'TJgKwwrYzHGxHRDZyQud994cWmMCyAmyti\n\n' +
-
-              '请上押后立即@官方交易员  @hwgf269 查账如有延迟通知查账，造成个人损失的，本平台概不负责押金未确认到帐  禁止交易   谨防骗子套路\n\n' +
-
-              '上押请尽量用自己的冷钱包转账，上下押需同一地址，切勿使用交易所提币上押，否则后果自行承担】').then(async () => {
-                await bot.sendPhoto(chatId, 'img.png').then(async () => {
-                  await bot.sendMessage(chatId, 'TJgKwwrYzHGxHRDZyQud994cWmMCyAmyti');
-                });
+            await cache.set('init:' + chatId, message.message_id+1);
+          }else if (messageText === '上押') {
+            await bot.sendMessage(chatId, '汇旺上押地址\n\n' +
+              '上押TRC20地址：   TWskNcPknGW68jxYbUJPdv4diUPsom8PJA\n' +
+              '请上押后立即@官方交易员  @oytb888 查账如有延迟通知查账，造成个人损失的，本平台概不负责押金未确认到帐  禁止交易   谨防骗子套路\n' +
+              '    交易所提币上押，需要提供自己的充币地址及提币录屏，录屏中的充币地址需要跟您报备的地址一致，该地址视为上押原地址，编辑无效，打错请重发！    冷钱包上押方便快捷，交易所提币上押费时费力。（上押请尽量用自己的冷钱包转账，上下押需同一地址）').then(async () => {
+              await bot.sendPhoto(chatId, 'img.png').then(async () => {
+                await bot.sendMessage(chatId, 'TWskNcPknGW68jxYbUJPdv4diUPsom8PJA');
               });
-          } else if (messageText) {
+            });
+          }else if (messageText) {
             if (messageText.startsWith('设置专群群名') || messageText.startsWith('修改专群群名')) {
               // 更改群组名称
               let newTitle = messageText.substring(6).trim();
               await bot.setChatTitle(chatId, newTitle);
               await bot.sendMessage(chatId, '群名修改成功，请核对：\n老群名：' + title + '\n新群名：' + newTitle);
-            } else if (messageText.startsWith('设置需方 @')) {
+            }else if (messageText.startsWith('设置需方 @')) {
               let userName = messageText.split('@')[1].trim();
               let firstName = await cache.get('deal:' + chatId + '_' + userName);
               await cache.set('demand:' + chatId, firstName + ' @' + userName);
               await bot.sendMessage(chatId, '需方负责人设置完成');
-            } else if (messageText.startsWith('设置供方 @')) {
+            }else if (messageText.startsWith('设置供方 @')) {
               let userName = messageText.split('@')[1].trim();
               let firstName = await cache.get('deal:' + chatId + '_' + userName);
               await cache.set('supply:' + chatId, firstName + ' @' + userName);
               await bot.sendMessage(chatId, '供方负责人设置完成');
-            } else if (messageText.startsWith('设置需方人员 @')) {
+            }else if (messageText.startsWith('设置需方人员 @')) {
               let pipeline = cache.pipeline();
               let users = messageText.substring(8).split('@');
               for (let user of users) {
@@ -349,7 +308,7 @@ bot.on('message', async (msg) => {
                   await bot.sendMessage(chatId, '需方人员设置完成');
                 }
               });
-            } else if (messageText.startsWith('设置供方人员 @')) {
+            }else if (messageText.startsWith('设置供方人员 @')) {
               let pipeline = cache.pipeline();
               let users = messageText.substring(8).split('@');
               for (let user of users) {
@@ -363,13 +322,13 @@ bot.on('message', async (msg) => {
                   await bot.sendMessage(chatId, '供方人员设置完成');
                 }
               });
-            } else if (messageText.startsWith('设置专群规则')) {
+            }else if (messageText.startsWith('设置专群规则')) {
               await cache.set('rule:' + chatId, messageText.substring(6).trim());
               await bot.sendMessage(chatId, '规则设置成功');
-            } else if (messageText.startsWith('设置专群业务')) {
+            }else if (messageText.startsWith('设置专群业务')) {
               await cache.set('biz:' + chatId, messageText.substring(6).trim());
               await bot.sendMessage(chatId, '业务设置成功');
-            } else if (messageText.startsWith('查看交易详情')) {
+            }else if (messageText.startsWith('查看交易详情')) {
               let demand = await cache.get('demand:' + chatId);
               let supply = await cache.get('supply:' + chatId);
               let rule = await cache.get('rule:' + chatId);
@@ -390,37 +349,7 @@ bot.on('message', async (msg) => {
                 '8、严禁利用汇旺担保规则来恶意欺诈，欺瞒，诱导交易方，一经核实，无论结果如何，从重责罚。\n' +
                 '9、新群若在当天未进行上押操作，将被回收。退押完毕的群如连续2天未重新上押交易，工作人员将进行清理回收。\n' +
                 '请供需双方确认交易详情是否需要补充和修改，如确认无误请回复「确认交易」');
-            } else if (messageText === '开启权限') {
-              await bot.sendMessage(chatId, '您已经是管理，请勿重复执行命令', {
-                reply_to_message_id: messageId,
-              });
             }
-          }
-        } else {
-          if (messageText === '开启权限') {
-            await bot.promoteChatMember(chatId, userId, {
-              can_change_info: true,        // 修改群组信息
-              can_delete_messages: true,    // 删除信息
-              can_restrict_members: true,   // 封禁成员
-              can_invite_users: true,       // 添加成员
-              can_pin_messages: true,       // 置顶消息
-              can_promote_members: true     // 添加管理员
-            });
-            await sendMessage(chatId, messageId, messageText);
-          } else if (messageText === '上押') {
-            await bot.sendMessage(chatId, '上押汇旺账户：\n' +
-              '汇旺账号：12345（靓号） 户名：担保上押 \n\n' +
-
-              '上押TRC20地址：\n' +
-              'TJgKwwrYzHGxHRDZyQud994cWmMCyAmyti\n\n' +
-
-              '请上押后立即@官方交易员  @hwgf269 查账如有延迟通知查账，造成个人损失的，本平台概不负责押金未确认到帐  禁止交易   谨防骗子套路\n\n' +
-              '    【【上押请尽量用自己的冷钱包转账，上下押需同一地址，切勿使用交易所提币上押，否则后果自行承担】】。（上押请尽量用自己的冷钱包转账，上下押需同一地址）\n' +
-              '上押请尽量用自己的冷钱包转账，上下押需同一地址，切勿使用交易所提币上押，否则后果自行承担】').then(async () => {
-                await bot.sendPhoto(chatId, 'img.png').then(async () => {
-                  await bot.sendMessage(chatId, 'TJgKwwrYzHGxHRDZyQud994cWmMCyAmyti');
-                });
-              });
           }
         }
       } else {
@@ -431,57 +360,4 @@ bot.on('message', async (msg) => {
       return false;
     }
   }
-});
-
-// 处理按钮点击
-bot.on('callback_query', (callbackQuery) => {
-  const data = callbackQuery.data; // 回调数据
-  const message = callbackQuery.message; // 点击按钮时的消息
-  const userId = callbackQuery.from.id; // 点击按钮的用户 ID
-
-  let responseText = '';
-
-  // 根据按钮类型更新状态
-  if (data === 'confirm_supplier' && !confirmationStatus.supplier) {
-    confirmationStatus.supplier = true;
-    responseText = '供方负责人已确认 ✅';
-  } else if (data === 'confirm_demander' && !confirmationStatus.demander) {
-    confirmationStatus.demander = true;
-    responseText = '需方负责人已确认 ✅';
-  } else {
-    responseText = '该操作已完成或无权限重复操作！';
-  }
-
-  // 更新消息内容
-  const updatedText = `
-请双方负责人确认：（双方负责人点击有效，其他人无效）
-确认无误后点击下方确认按钮：
-供方负责人: ${confirmationStatus.supplier ? '✅ 已确认' : ''}
-需方负责人: ${confirmationStatus.demander ? '✅ 已确认' : ''}
-`;
-
-  // 修改原消息
-  bot.editMessageText(updatedText, {
-    chat_id: message.chat.id,
-    message_id: message.message_id,
-    reply_markup: {
-      inline_keyboard: [
-        [
-          {
-            text: `✅ 供方确认${confirmationStatus.supplier ? '（已完成）' : ''}`,
-            callback_data: 'confirm_supplier',
-          },
-          {
-            text: `✅ 需方确认${confirmationStatus.demander ? '（已完成）' : ''}`,
-            callback_data: 'confirm_demander',
-          },
-        ],
-      ],
-    },
-  });
-
-  // 回复点击者
-  bot.answerCallbackQuery(callbackQuery.id, {
-    text: responseText
-  });
 });

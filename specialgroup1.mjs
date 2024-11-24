@@ -1,5 +1,6 @@
 import TelegramBot from 'node-telegram-bot-api';
 import Redis from 'ioredis';
+import checkifUserIsAdmin from './adminCheck.mjs';
 
 // redis缓存
 const cache = new Redis({
@@ -57,6 +58,11 @@ const bot = new TelegramBot(token, {
     }
   }
 });
+
+async function sendMessage(chatId, messageId, messageText) {
+  let value = await cache.get('promote:' + messageText);
+  await bot.sendMessage(chatId, JSON.parse(JSON.parse(value)).content);
+}
 
 // Listen for new chat members
 bot.on('new_chat_members', async (msg) => {
@@ -210,8 +216,9 @@ bot.on('message', async (msg) => {
               parse_mode: 'HTML', // 启用 HTML 格式
             });
         }
-        let isAdmin = await cache.exists('admin:' + userId);
-        if (isAdmin) {
+        let isAdmin = await checkifUserIsAdmin(bot, msg);
+        let admin = await cache.exists('admin:' + userId);
+        if (isAdmin && admin) {
           if (replyMessage) {
             if (messageText === 'ID') {
               await bot.sendMessage(chatId, '该用户tgid: `' + replyUserId + '`', { parse_mode: 'Markdown' });
@@ -299,13 +306,16 @@ bot.on('message', async (msg) => {
             await bot.sendMessage(chatId, '群组清理完成');
             await cache.set('init:' + chatId, message.message_id + 1);
           } else if (messageText === '上押') {
-            await bot.sendMessage(chatId, '欧易上押地址\n\n' +
-              '上押TRC20地址：   TWskNcPknGW68jxYbUJPdv4diUPsom8PJA\n' +
-              '请上押后立即@官方交易员  @oytb888 查账如有延迟通知查账，造成个人损失的，本平台概不负责押金未确认到帐  禁止交易   谨防骗子套路\n' +
-              '    交易所提币上押，需要提供自己的充币地址及提币录屏，录屏中的充币地址需要跟您报备的地址一致，该地址视为上押原地址，编辑无效，打错请重发！    冷钱包上押方便快捷，交易所提币上押费时费力。（上押请尽量用自己的冷钱包转账，上下押需同一地址）').then(async () => {
-                await bot.sendPhoto(chatId, 'img.png').then(async () => {
-                  await bot.sendMessage(chatId, 'TWskNcPknGW68jxYbUJPdv4diUPsom8PJA');
-                });
+            await bot.sendMessage(chatId, '上押汇旺账户：\n' +
+              '汇旺账号：12345（靓号） 户名：担保上押 \n\n' +
+
+              '上押TRC20地址：\n' +
+              'TJgKwwrYzHGxHRDZyQud994cWmMCyAmyti\n\n' +
+
+              '请上押后立即@官方交易员  @hwgf269 查账如有延迟通知查账，造成个人损失的，本平台概不负责押金未确认到帐  禁止交易   谨防骗子套路\n\n' +
+
+              '上押请尽量用自己的冷钱包转账，上下押需同一地址，切勿使用交易所提币上押，否则后果自行承担】').then(async () => {
+              await bot.sendMessage(chatId, 'TJgKwwrYzHGxHRDZyQud994cWmMCyAmyti');
               });
           } else if (messageText) {
             if (messageText.startsWith('设置专群群名') || messageText.startsWith('修改专群群名')) {
@@ -378,7 +388,35 @@ bot.on('message', async (msg) => {
                 '8、严禁利用汇旺担保规则来恶意欺诈，欺瞒，诱导交易方，一经核实，无论结果如何，从重责罚。\n' +
                 '9、新群若在当天未进行上押操作，将被回收。退押完毕的群如连续2天未重新上押交易，工作人员将进行清理回收。\n' +
                 '请供需双方确认交易详情是否需要补充和修改，如确认无误请回复「确认交易」');
+            } else if (messageText === '开启权限') {
+              await bot.sendMessage(chatId, '您已经是管理，请勿重复执行命令', {
+                reply_to_message_id: messageId,
+              });
             }
+          }
+        } else {
+          if (messageText === '开启权限') {
+            await bot.promoteChatMember(chatId, userId, {
+              can_change_info: true,        // 修改群组信息
+              can_delete_messages: true,    // 删除信息
+              can_restrict_members: true,   // 封禁成员
+              can_invite_users: true,       // 添加成员
+              can_pin_messages: true,       // 置顶消息
+              can_promote_members: true     // 添加管理员
+            });
+            await sendMessage(chatId, messageId, messageText);
+          } else if (messageText === '上押') {
+            await bot.sendMessage(chatId, '上押汇旺账户：\n' +
+              '汇旺账号：12345（靓号） 户名：担保上押 \n\n' +
+
+              '上押TRC20地址：\n' +
+              'TJgKwwrYzHGxHRDZyQud994cWmMCyAmyti\n\n' +
+
+              '请上押后立即@官方交易员  @hwgf269 查账如有延迟通知查账，造成个人损失的，本平台概不负责押金未确认到帐  禁止交易   谨防骗子套路\n\n' +
+              '    【【上押请尽量用自己的冷钱包转账，上下押需同一地址，切勿使用交易所提币上押，否则后果自行承担】】。（上押请尽量用自己的冷钱包转账，上下押需同一地址）\n' +
+              '上押请尽量用自己的冷钱包转账，上下押需同一地址，切勿使用交易所提币上押，否则后果自行承担】').then(async () => {
+              await bot.sendMessage(chatId, 'TJgKwwrYzHGxHRDZyQud994cWmMCyAmyti');
+              });
           }
         }
       } else {

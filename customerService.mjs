@@ -2,9 +2,8 @@ import TelegramBot from 'node-telegram-bot-api';
 import Redis from 'ioredis';
 
 // redis缓存
-const host = '127.0.0.1';
 const cache = new Redis({
-  host: host,
+  host: '45.207.194.10',
   port: 6379,
   db: 0,
   password: 'Qwer1234..',

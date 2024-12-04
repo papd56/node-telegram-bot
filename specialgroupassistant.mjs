@@ -46,7 +46,7 @@ cache.on('error', (error) => {
   console.error('redis error:', error);
 });
 
-const token = '7238618014:AAF4IJsKli63yfo3420EjcXXjtocczsi9e0';
+const token = '7238618014:AAGnBCYYVzuiMC0wkAU-9OhaUL-zGmZtHHA';
 
 const bot = new TelegramBot(token, {
   polling: true,

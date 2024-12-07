@@ -139,7 +139,8 @@ bot.on('new_chat_members', async (msg) => {
         let group = {
           botId: botInfo.id,
           groupId: chatId,
-          groupName: msg.chat.title
+          groupName: msg.chat.title,
+          groupWelcome: '欢迎来到,你的世界我的梦!!!'
         };
         await post('/bot/group/addGroup', group);
       }

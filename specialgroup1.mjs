@@ -47,7 +47,7 @@ cache.on('error', (error) => {
   console.error('redis error:', error);
 });
 
-const token = '7829636771:AAGpnFhb8wpA1oEPHEzXBudxMoAMUZOP2ng';
+const token = '7238618014:AAGnBCYYVzuiMC0wkAU-9OhaUL-zGmZtHHA';
 
 const bot = new TelegramBot(token, {
   polling: true,
@@ -310,13 +310,13 @@ bot.on('message', async (msg) => {
               '汇旺账号：12345（靓号） 户名：担保上押 \n\n' +
 
               '上押TRC20地址：\n' +
-              'TJgKwwrYzHGxHRDZyQud994cWmMCyAmyti\n\n' +
+              'TX36xRA9NVTP6oZsZYk98FYH25AoKVVter\n\n' +
 
-              '请上押后立即@官方交易员  @hwgf269 查账如有延迟通知查账，造成个人损失的，本平台概不负责押金未确认到帐  禁止交易   谨防骗子套路\n\n' +
+              '请上押后立即@官方交易员  @hvvtb809 查账如有延迟通知查账，造成个人损失的，本平台概不负责押金未确认到帐  禁止交易   谨防骗子套路\n\n' +
 
               '上押请尽量用自己的冷钱包转账，上下押需同一地址，切勿使用交易所提币上押，否则后果自行承担】').then(async () => {
                 await bot.sendPhoto(chatId, 'img.png').then(async () => {
-                  await bot.sendMessage(chatId, 'TJgKwwrYzHGxHRDZyQud994cWmMCyAmyti');
+                  await bot.sendMessage(chatId, 'TX36xRA9NVTP6oZsZYk98FYH25AoKVVter');
                 });
               });
           } else if (messageText) {
@@ -412,13 +412,13 @@ bot.on('message', async (msg) => {
               '汇旺账号：12345（靓号） 户名：担保上押 \n\n' +
 
               '上押TRC20地址：\n' +
-              'TJgKwwrYzHGxHRDZyQud994cWmMCyAmyti\n\n' +
+              'TX36xRA9NVTP6oZsZYk98FYH25AoKVVter\n\n' +
 
-              '请上押后立即@官方交易员  @hwgf269 查账如有延迟通知查账，造成个人损失的，本平台概不负责押金未确认到帐  禁止交易   谨防骗子套路\n\n' +
+              '请上押后立即@官方交易员  @hvvtb809 查账如有延迟通知查账，造成个人损失的，本平台概不负责押金未确认到帐  禁止交易   谨防骗子套路\n\n' +
               '    【【上押请尽量用自己的冷钱包转账，上下押需同一地址，切勿使用交易所提币上押，否则后果自行承担】】。（上押请尽量用自己的冷钱包转账，上下押需同一地址）\n' +
               '上押请尽量用自己的冷钱包转账，上下押需同一地址，切勿使用交易所提币上押，否则后果自行承担】').then(async () => {
                 await bot.sendPhoto(chatId, 'img.png').then(async () => {
-                  await bot.sendMessage(chatId, 'TJgKwwrYzHGxHRDZyQud994cWmMCyAmyti');
+                  await bot.sendMessage(chatId, 'TX36xRA9NVTP6oZsZYk98FYH25AoKVVter');
                 });
               });
           }

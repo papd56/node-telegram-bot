@@ -140,7 +140,7 @@ bot.on('new_chat_members', async (msg) => {
           botId: botInfo.id,
           groupId: chatId,
           groupName: msg.chat.title,
-          groupWelcome: '欢迎来到,你的世界我的梦!!!'
+          groupWelcome: '欢迎来到' + msg.chat.title + '本群交易请先确认群内置顶【本公群规则】，交易必须通过 @gqbaobel_bot 报备，不报备、私聊或私群交易，纠纷一律不处理。'
         };
         await post('/bot/group/addGroup', group);
       }

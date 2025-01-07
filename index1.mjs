@@ -26,39 +26,15 @@ const cache = new Redis({
     if (options.error && options.error.code === 'ECONNREFUSED') {
       // Handle ECONNREFUSED differently
       console.error('Redis connection refused');
-      return new Error('Redis connection refused');
-    }
-
-    if (options.attempt > 10) {
-      // End reconnecting on a specific error and flush all commands with
-      // individual error
-      console.error('Redis connection failed after 10 attempts');
+      // 网络错误，快速重试
+      return 100; // 100ms 后重试
+    } else if (options.attempt > 10) {
+      // 重试次数过多，放弃
       return new Error('Too many retry attempts');
     }
-
-    if (options.total_retry_time > 1000 * 60 * 5) {
-      // End reconnecting after a specific timeout and flush all commands
-      // with individual error
-      console.error('Redis connection failed after 5 minutes');
-      return new Error('Retry time exhausted');
-    }
-
-    if (options.error !== undefined && options.error.code === 'ECONNRESET' && options.attempt < 10) {
-      // End reconnecting on a specific error and flush all commands with
-      // individual error
-      console.error('Redis connection reset');
-      return new Error('Redis connection reset');
-    }
-
-    // reconnect after
+    // 其他错误，指数退避
     return Math.min(options.attempt * 100, 3000);
-  },
-  connect_timeout: 1000, // 连接超时时间
-  idleTimeout: 60000
-});
-
-cache.on('error', (error) => {
-  console.error('redis error:', error);
+  }
 });
 
 const token = '7000447729:AAGqaBj7sVj1D_13cKnajE-UOLl1QR6WvGY';
@@ -182,7 +158,7 @@ const newPermissions = {
   // ...其他权限设置
 };
 // 敏感词库
-const sensitiveWords = ['假群', '假压', '假牙', '假呀', '骗子群', '假压群', '骗子担保','克隆群'];
+const sensitiveWords = ['假群', '假压', '假牙', '假呀', '骗子群', '假压群', '骗子担保', '克隆群'];
 const regex = new RegExp(sensitiveWords.join('|'), 'i');
 
 bot.on('message', async (msg) => {

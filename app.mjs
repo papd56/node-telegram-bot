@@ -3,28 +3,7 @@ import checkifUserIsAdmin from './adminCheck.mjs';
 import { DateTime } from 'luxon';
 import Redis from 'ioredis';
 import axios from 'axios';
-import http from 'http';
 import express from 'express';
-
-async function fetchData(path, data) {
-    let options = {
-        hostname: '127.0.0.1',
-        port: 8898,
-        path: path,
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    };
-    let req = http.request(options, (res) => {
-        // 不处理响应数据
-    });
-    req.on('error', (error) => {
-        console.error(error);
-    });
-    req.write(data);
-    req.end();
-}
 
 async function post(path, data) {
     return await axios.post('http://45.207.194.10:8898' + path, data);
@@ -46,35 +25,15 @@ const cache = new Redis({
         if (options.error && options.error.code === 'ECONNREFUSED') {
             // Handle ECONNREFUSED differently
             console.error('Redis connection refused');
-            return new Error('Redis connection refused');
-        }
-
-        if (options.attempt > 10) {
-            // End reconnecting on a specific error and flush all commands with
-            // individual error
-            console.error('Redis connection failed after 10 attempts');
+            // 网络错误，快速重试
+            return 100; // 100ms 后重试
+        } else if (options.attempt > 10) {
+            // 重试次数过多，放弃
             return new Error('Too many retry attempts');
         }
-
-        if (options.total_retry_time > 1000 * 60 * 5) {
-            // End reconnecting after a specific timeout and flush all commands
-            // with individual error
-            console.error('Redis connection failed after 5 minutes');
-            return new Error('Retry time exhausted');
-        }
-
-        if (options.error !== undefined && options.error.code === 'ECONNRESET' && options.attempt < 10) {
-            // End reconnecting on a specific error and flush all commands with
-            // individual error
-            console.error('Redis connection reset');
-            return new Error('Redis connection reset');
-        }
-
-        // reconnect after
+        // 其他错误，指数退避
         return Math.min(options.attempt * 100, 3000);
-    },
-    connect_timeout: 1000, // 连接超时时间
-    idleTimeout: 60000
+    }
 });
 
 // 缓存 应下发 已下发 未下发key

@@ -103,7 +103,7 @@ setInterval(async () => {
 bot.on('new_chat_members', async (msg) => {
   if (msg) {
     // Array of allowed admin user IDs
-    const allowedAdmins = [6640317363, 6204408576, 5923553330, 6711987571];
+    const allowedAdmins = [6640317363, 6204408576, 5923553330, 6711987571,6884995168];
     const chatId = msg.chat.id;
     const operatorId = msg.from.id;
     if (msg.new_chat_member.id === botInfo.id) {

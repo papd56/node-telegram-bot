@@ -103,7 +103,7 @@ setInterval(async () => {
 bot.on('new_chat_members', async (msg) => {
   if (msg) {
     // Array of allowed admin user IDs
-    const allowedAdmins = [6640317363, 6204408576, 5923553330, 6711987571,6884995168];
+    const allowedAdmins = [6640317363, 6204408576, 5923553330, 6711987571, 6884995168];
     const chatId = msg.chat.id;
     const operatorId = msg.from.id;
     if (msg.new_chat_member.id === botInfo.id) {
@@ -119,6 +119,7 @@ bot.on('new_chat_members', async (msg) => {
           groupWelcome: '欢迎来到' + msg.chat.title + '本群交易请先确认群内置顶【本公群规则】，交易必须通过 @gqbaobel_bot 报备，不报备、私聊或私群交易，纠纷一律不处理。'
         };
         await post('/bot/group/addGroup', group);
+        await cache.hset('group', chatId);
       }
     } else {
       let users = [];

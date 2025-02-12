@@ -132,8 +132,8 @@ bot.on('message', async (msg) => {
           const message = `
 请双方负责人确认：（双方负责人点击有效，其他人无效）
 确认无误后点击下方确认按钮：
-供方负责人: ${demand} ${confirmationStatus.supplier ? '✅ 已确认' : ''}
-需方负责人: ${supply} ${confirmationStatus.demander ? '✅ 已确认' : ''}
+供方负责人: ${supply} ${confirmationStatus.supplier ? '✅ 已确认' : ''}
+需方负责人: ${demand} ${confirmationStatus.demander ? '✅ 已确认' : ''}
 `;
           await bot.sendMessage(chatId, message, buttons);
         }
